@@ -1,0 +1,12 @@
+# Denodo API Configuration
+DENODO_API_HOST=http://localhost:8080
+DENODO_USERNAME=admin
+DENODO_PASSWORD=admin
+
+# OpenAI API Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+EMBEDDING_MODEL=text-embedding-ada-002
+LLM_MODEL=gpt-4o-mini
+
+# PostgreSQL Configuration (optional - for persistent memory storage)
+PG_CONN_STRING=postgresql://username:password@localhost:5432/memory_db 
