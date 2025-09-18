@@ -1,12 +1,30 @@
 import os
 import asyncio
+import json
 from google.adk.agents import LlmAgent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.adk.tools.tool_context import ToolContext
 from google.genai.types import Content, Part
+from google.adk.sessions.state import State
+from google.adk.events.event import Event
+import uuid
+import time
+from google.adk.events.event_actions import EventActions
 
-# Define a tool function that updates state via tool_context
+async def persist_state_from_response_tool(current_state: dict, session_service: InMemorySessionService, app_name: str, user_id: str, session_id: str):
+    session = await session_service.get_session(app_name=app_name, user_id=user_id, session_id=session_id)
+    actions = EventActions(state_delta={**{State.USER_PREFIX + k: v for k, v in current_state.items()}})
+    # Create a dummy event with state_delta
+    event = Event(
+        invocation_id=str(uuid.uuid4()),
+        author="system",
+        actions=actions,
+        timestamp=time.time()
+    )
+    await session_service.append_event(session, event)
+
+# ----------------- TOOLS -----------------
 def log_user_login(tool_context: ToolContext) -> dict:
     """
     Tracks user login and updates session state.
@@ -23,13 +41,19 @@ def log_user_login(tool_context: ToolContext) -> dict:
         "message": f"User login tracked. Total logins: {login_count}.",
     }
 
-# Another tool to show current state
 def show_state(tool_context: ToolContext) -> dict:
     """
-    Returns the current session state for inspection.
+    Returns the current session state with updated testing_list for inspection.
     """
-    return {"current_state": dict(tool_context.state)}
+    tool_context.state['testing_list'] = [1, 2, 3]
+    tool_context.state['global_theme'] = 'light'
+    # safer: convert to dict
+    return {
+        "current_state": tool_context.state.to_dict(),
+        "persist_state": True # Indicate that state should be persisted
+    }
 
+# ----------------- MAIN -----------------
 async def main():
     agent = LlmAgent(
         name="Greeter",
@@ -51,7 +75,7 @@ async def main():
         app_name=app_name,
         user_id=user_id,
         session_id=session_id,
-        state={"user:login_count": 0, "task_status": "idle"},
+        state={"user:login_count": 0, "task_status": "idle", "global_theme": "dark"},
     )
 
     print("Initial state:", session.state)
@@ -63,10 +87,43 @@ async def main():
         session_id=session_id,
         new_message=user_message,
     ):
-        # You can inspect events if the event objects have attributes for tool outputs;
-        # but since you said ToolResponseEvent etc. aren't there, you might just rely
-        # on the final response or the built-in logging ADK may provide.
-        pass
+        print(f"\n📌 Event from: {event.author}")
+
+        #Inspect parts directly
+        if event.content and event.content.parts:
+            for part in event.content.parts:
+                if part.text:
+                    print("💬 Agent text:", part.text)
+                if part.function_call:
+                    dump = part.function_call.model_dump() if hasattr(part.function_call, "model_dump") else part.function_call.dict()
+                    print("📞 Function call:", json.dumps(dump, indent=2))
+                if part.function_response:
+                    dump = part.function_response.model_dump() if hasattr(part.function_response, "model_dump") else part.function_response.dict()
+                    print("🔧 Function response:", json.dumps(dump, indent=2))
+                    response_content = dump.get("response", {})
+                    if response_content.get("persist_state", False):
+                        print("💾 Persisting state as requested by tool...")
+                        current_state = response_content.get("current_state", {})
+                        await persist_state_from_response_tool(
+                            current_state=current_state,
+                            session_service=session_service,
+                            app_name=app_name,
+                            user_id=user_id,
+                            session_id=session_id
+                        )
+                if part.code_execution_result:
+                    # code_execution_result is usually a plain string or dict already
+                    print("🖥️ Code exec result:", part.code_execution_result)
+
+        # Convenience helpers
+        # for call in event.get_function_calls():
+        #     print("➡️ Detected tool call:", call)
+
+        # for resp in event.get_function_responses():
+        #     print("⬅️ Detected tool response:", json.dumps(resp, indent=2))
+
+        # if event.is_final_response():
+        #     print("✅ Final response reached")
 
     print("Final state:", session.state)
 
