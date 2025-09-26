@@ -77,8 +77,11 @@ def before_model_logger(callback_context: CallbackContext, llm_request: LlmReque
     st = callback_context.state  # dict-like
     last_status = st.get("status_update")
     count = callback_context.state.get("checking", 0)
+    iteration_count = callback_context.state.get("iterative", 0)
     callback_context.state["checking"] = count + 1
+    callback_context.state["iterative"] = iteration_count + 1
     print(f"[before_model] Agent={callback_context.agent_name} | prior status_update={last_status}")
+    print(f"[before_model] Agent={callback_context.agent_name} | iterative={iteration_count + 1}")
     # Return None to proceed with the normal LLM call; or return LlmResponse to short-circuit.
     return None
 
@@ -86,25 +89,13 @@ def after_model_logger(callback_context: CallbackContext, llm_response: LlmRespo
     """Example: inspect the model response; you could normalize or enforce structured format here."""
     text = ""
     count = callback_context.state.get("checking", 0)
-    
-    # Safely update the status_update status to "pending"
-    if "status_update" in callback_context.state:
-        if isinstance(callback_context.state["status_update"], dict):
-            print("Here in the dictionary format")
-            callback_context.state["status_update"]["status"] = "pending"
-        else:
-            # If it's not a dict, create a new one
-            print("Here in the not dictionary format")
-            callback_context.state["status_update"] = {"status": "pending"}
-    else:
-        # If status_update doesn't exist, create it
-        print("Here not exist")
-        callback_context.state["status_update"] = {"status": "pending"}
+    iteration_count = callback_context.state.get("iterative", 0)
     
     if llm_response and llm_response.content and llm_response.content.parts:
         text = llm_response.content.parts[0].text or ""
     print(f"[after_model] Agent={callback_context.agent_name} | model_text='{text}'")
     print(f"[after_model] Agent={callback_context.agent_name} | checking={count}")
+    print(f"[after_model] Agent={callback_context.agent_name} | iterative={iteration_count}")
     print(f"[after_model] Agent={callback_context.agent_name} | status_update={callback_context.state.get('status_update', {})}")
     return None  # Return a modified LlmResponse to override, or None to keep as-is.
 
@@ -116,7 +107,9 @@ process_step = LlmAgent(
     model="gemini-2.0-flash-exp",
     instruction=(
         "You are a step in a longer, multi-step process. "
-        "Based on the context, determine if the process is completed or still pending. "
+        "Current iteration: {iterative}. "
+        "If the iteration is 3 or higher, the process status should be completed. "
+        "Otherwise, it should be pending. "
         "Return ONLY JSON that matches the schema (no extra text): {\"status\": \"completed\" | \"pending\"}."
     ),
     output_schema=StatusResult,     # <— Pydantic model for validated structured output
@@ -141,7 +134,8 @@ async def main():
     session_service = InMemorySessionService()
     SESSION_ID = str(uuid.uuid4())
     initial_state = {
-        "checking": 1
+        "checking": 1,
+        "iterative": 0  # Initialize iteration counter
     }
 
     # Create a fresh session (state is shared across sub-agents)
