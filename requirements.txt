@@ -1,4 +1,6 @@
 langchain
 langchain-community
 langchain-gemini
+langchain-google-genai
 langgraph
+google-adk

@@ -14,6 +14,7 @@ from google.adk.events.event_actions import EventActions
 
 async def persist_state_from_response_tool(current_state: dict, session_service: InMemorySessionService, app_name: str, user_id: str, session_id: str):
     session = await session_service.get_session(app_name=app_name, user_id=user_id, session_id=session_id)
+    session.state.update(current_state)
     actions = EventActions(state_delta={**{State.USER_PREFIX + k: v for k, v in current_state.items()}})
     # Create a dummy event with state_delta
     event = Event(
@@ -104,6 +105,7 @@ async def main():
                     if response_content.get("persist_state", False):
                         print("💾 Persisting state as requested by tool...")
                         current_state = response_content.get("current_state", {})
+                        await runner.update_session_state(user_id=user_id, session_id=session_id, state_delta=current_state)
                         await persist_state_from_response_tool(
                             current_state=current_state,
                             session_service=session_service,
