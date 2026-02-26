@@ -1,0 +1,15 @@
+options:
+  logging: CLOUD_LOGGING_ONLY
+ 
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-f', 'georgia-digitization-platform/frontend/Dockerfile',
+      '-t', 'us-east1-docker.pkg.dev/${_ARTIFACT_REG_NM}/gadhs-dd-frontend/frontend-image:$SHORT_SHA',
+      '--build-arg', 'BACKEND_API=${_BACKEND_API}',
+      'georgia-digitization-platform/frontend'
+    ]
+ 
+images:
+  - 'us-east1-docker.pkg.dev/${_ARTIFACT_REG_NM}/gadhs-dd-frontend/frontend-image:$SHORT_SHA'

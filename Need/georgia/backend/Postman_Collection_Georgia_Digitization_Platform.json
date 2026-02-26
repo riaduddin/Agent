@@ -1,0 +1,3792 @@
+{
+  "info": {
+    "name": "Georgia Digitization Platform - Backend API",
+    "description": "Complete API collection for the Georgia Digitization Platform backend. This collection includes all endpoints for document processing, user management, file operations, system administration, and AI-powered search functionality. Updated with all missing endpoints including System routes, V2 API endpoints, and comprehensive GCS operations. Latest update includes: Rename File, Bulk Delete Files/Folders, List Root/Path Directory, List Destinations with Subfolders, List Destination Path, List With Subfolders, Search Files and Folders, Download Folders as ZIP, and Get User Transfers (Paginated) endpoints.",
+    "version": "2.2.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5001",
+      "type": "string",
+      "description": "Base URL for the API"
+    },
+    {
+      "key": "jwtToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT token for authentication"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string",
+      "description": "Admin JWT token for admin operations"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"ok\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "User Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "auth", "login"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"access_token\": \"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...\",\n  \"user\": {\n    \"id\": \"user-id\",\n    \"name\": \"John Doe\",\n    \"email\": \"admin@example.com\",\n    \"role\": \"admin\"\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has access token\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('access_token');",
+                  "    pm.expect(jsonData).to.have.property('user');",
+                  "});",
+                  "",
+                  "// Set token for subsequent requests",
+                  "pm.collectionVariables.set(\"jwtToken\", pm.response.json().access_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SSO Login",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/auth/sso/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "auth", "sso", "login"]
+            }
+          },
+          "response": [
+            {
+              "name": "Redirect Response",
+              "status": "Found",
+              "code": 302,
+              "header": [
+                {
+                  "key": "Location",
+                  "value": "https://connect.gets.ga.gov/app/gets_dhsdfcs_1/exk1lkg6mwaAZpE3P358/sso/saml"
+                }
+              ],
+              "body": ""
+            }
+          ]
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "auth", "me"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": \"user-id\",\n  \"name\": \"John Doe\",\n  \"email\": \"admin@example.com\",\n  \"role\": \"admin\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Smith\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "auth", "profile"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"msg\": \"Profile updated successfully\",\n  \"user\": {\n    \"id\": \"user-id\",\n    \"name\": \"John Smith\",\n    \"email\": \"admin@example.com\",\n    \"role\": \"admin\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"password123\",\n  \"newPassword\": \"newpassword456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/auth/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "auth", "change-password"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"msg\": \"Password updated successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "auth", "logout"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"msg\": \"Successfully logged out\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Test Ping",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/auth/test/ping",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "auth", "test", "ping"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"msg\": \"Auth routes working\",\n  \"status\": \"ok\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Test SAML Imports",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/auth/test/saml-imports",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "auth", "test", "saml-imports"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"msg\": \"SAML imports successful\",\n  \"status\": \"imports_ok\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Test SAML Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/auth/test/saml-settings",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "auth", "test", "saml-settings"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"msg\": \"SAML settings test\",\n  \"json_settings_loaded\": true,\n  \"status\": \"settings_test_complete\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Document Management",
+      "item": [
+        {
+          "name": "Upload Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "/path/to/sample.pdf"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/docs/upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "docs", "upload"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"msg\": \"Upload process finished.\",\n  \"successful_uploads\": [\n    {\n      \"filename\": \"sample.pdf\",\n      \"gcs_uri\": \"gs://bucket/chunks/...\",\n      \"firestore_doc_id\": \"doc-id\",\n      \"status\": \"Pending\"\n    }\n  ],\n  \"failed_uploads\": [],\n  \"upload_warnings\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Chat with Documents",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"What are the main topics discussed in these documents?\",\n  \"session_id\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/docs/chat",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "docs", "chat"]
+            }
+          },
+          "response": [
+            {
+              "name": "Streaming Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/event-stream"
+                }
+              ],
+              "body": "data: {\"status\": \"Embedding your query...\"}\n\ndata: {\"status\": \"Searching for relevant documents...\"}\n\ndata: {\"chunk\": \"Based on the documents...\"}\n\ndata: {\"event\": \"done\", \"session_id\": \"session-id\", \"references\": [...]}"
+            }
+          ]
+        },
+        {
+          "name": "Get Document History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/docs/history?limit=10&start_after=&search=&status=",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "docs", "history"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "start_after",
+                  "value": ""
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "status",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"history\": [\n    {\n      \"id\": \"doc-id\",\n      \"original_filename\": \"sample.pdf\",\n      \"upload_timestamp\": \"2025-01-01T00:00:00Z\",\n      \"status\": \"Completed\",\n      \"file_size\": 1024000\n    }\n  ],\n  \"next_cursor\": \"next-doc-id\",\n  \"limit\": 10,\n  \"search_term\": \"\",\n  \"status\": \"\",\n  \"total_items\": 50\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Chat Sessions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/docs/chat/sessions?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "docs", "chat", "sessions"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"sessions\": [\n    {\n      \"session_id\": \"session-id-1\",\n      \"title\": \"Document Analysis Session\",\n      \"created_at\": \"2025-01-01T00:00:00Z\",\n      \"message_count\": 5\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Download Document",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/docs/download/doc-id",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "docs", "download", "doc-id"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"signed_url\": \"https://storage.googleapis.com/...\",\n  \"filename\": \"sample.pdf\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reprocess Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/docs/doc-id/reprocess",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "docs", "doc-id", "reprocess"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"msg\": \"Document reprocessing successfully initiated.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Session Messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/docs/chat/sessions/session-id/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "docs", "chat", "sessions", "session-id", "messages"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"messages\": [\n    {\n      \"id\": \"msg-id\",\n      \"query\": \"What is this document about?\",\n      \"answer\": \"This document discusses...\",\n      \"references\": [],\n      \"timestamp\": \"2025-01-01T00:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Document Metadata",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/docs/doc-id/metadata",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "docs", "doc-id", "metadata"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": \"doc-id\",\n  \"original_filename\": \"sample.pdf\",\n  \"status\": \"Completed\",\n  \"upload_timestamp\": \"2025-01-01T00:00:00Z\",\n  \"download_url\": \"https://storage.googleapis.com/...\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Document Chunks",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/docs/doc-id/chunks?limit=20&start_after=",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "docs", "doc-id", "chunks"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "start_after",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"items\": [\n    {\n      \"id\": \"chunk-id\",\n      \"start_page\": 1,\n      \"end_page\": 5,\n      \"status\": \"completed\"\n    }\n  ],\n  \"next_cursor\": \"next-chunk-id\",\n  \"limit\": 20\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Document Logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/docs/doc-id/logs?limit=50&start_after=&level=",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "docs", "doc-id", "logs"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "start_after",
+                  "value": ""
+                },
+                {
+                  "key": "level",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"items\": [\n    {\n      \"id\": \"log-id\",\n      \"level\": \"INFO\",\n      \"message\": \"Processing started\",\n      \"timestamp\": \"2025-01-01T00:00:00Z\"\n    }\n  ],\n  \"next_cursor\": \"next-log-id\",\n  \"limit\": 50\n}"
+            }
+          ]
+        },
+        {
+          "name": "Force Reprocess Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/docs/doc-id/force-reprocess",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "docs", "doc-id", "force-reprocess"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"msg\": \"Document force reprocessing successfully initiated.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Download Chunk",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/docs/chunks/chunk-id/download",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "docs", "chunks", "chunk-id", "download"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"signed_url\": \"https://storage.googleapis.com/...\",\n  \"filename\": \"document_chunk_p1-5.pdf\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Rename Chat Session",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"New Session Title\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/docs/chat/sessions/session-id",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "docs", "chat", "sessions", "session-id"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"msg\": \"Session renamed successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Chat Session",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/docs/chat/sessions/session-id",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "docs", "chat", "sessions", "session-id"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"msg\": \"Session deleted successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Vector Search Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/docs/status/vector-search",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "docs", "status", "vector-search"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"endpoint_connected\": true,\n  \"index_deployed\": true\n}"
+            }
+          ]
+        },
+        {
+          "name": "Backfill Search Keywords",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/docs/backfill_search_keywords",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "docs", "backfill_search_keywords"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"msg\": \"✅ Search keyword backfill completed successfully.\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "User Management",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/users/",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "users", ""]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"id\": \"user-id-1\",\n    \"name\": \"John Doe\",\n    \"email\": \"john@example.com\",\n    \"role\": \"admin\",\n    \"created_at\": \"2025-01-01T00:00:00Z\"\n  },\n  {\n    \"id\": \"user-id-2\",\n    \"name\": \"Jane Smith\",\n    \"email\": \"jane@example.com\",\n    \"role\": \"user\",\n    \"created_at\": \"2025-01-02T00:00:00Z\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New User\",\n  \"email\": \"newuser@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"user\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/users/",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "users", ""]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"User created successfully\",\n  \"user_id\": \"new-user-id\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\",\n  \"role\": \"admin\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/users/user-id",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "users", "user-id"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"User user-id updated successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/users/user-id",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "users", "user-id"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": \"user-id\",\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"role\": \"admin\",\n  \"created_at\": \"2025-01-01T00:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/users/user-id",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "users", "user-id"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"User user-id deleted successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "File Management (GCS)",
+      "item": [
+        {
+          "name": "Get GCS Configuration",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/config",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "config"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"sourceRoot\": \"Pending Files/\",\n  \"bucketName\": \"your-bucket-name\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Source Directory",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/source-directory?path=&page=1&page_size=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "source-directory"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"folders\": [\n    \"Pending Files/\",\n    \"Processed/\"\n  ],\n  \"files\": [\n    \"document1.pdf\",\n    \"document2.pdf\"\n  ],\n  \"pagination\": {\n    \"current_page\": 1,\n    \"total_pages\": 3,\n    \"page_size\": 50,\n    \"has_next\": true,\n    \"has_prev\": false\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Transfer File",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"source\": {\n    \"path\": \"Pending Files/document.pdf\"\n  },\n  \"destination\": {\n    \"root\": \"Processed/\",\n    \"path\": \"\"\n  },\n  \"operation\": \"move\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/transfer",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "transfer"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "Accepted",
+              "code": 202,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"File transfer initiated\",\n  \"transferId\": \"transfer-id-123\",\n  \"status\": \"pending\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Transfer Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/transfers/transfer-id-123",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "transfers", "transfer-id-123"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"transferId\": \"transfer-id-123\",\n  \"status\": \"completed\",\n  \"source_path\": \"Pending Files/document.pdf\",\n  \"destination_path\": \"Processed/document.pdf\",\n  \"operation\": \"move\",\n  \"progress\": 100,\n  \"started_at\": \"2025-01-01T00:00:00Z\",\n  \"completed_at\": \"2025-01-01T00:01:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Destinations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/destinations?path=&page=1&page_size=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "destinations"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"folders\": [\"Processed/\", \"Archived/\"],\n  \"files\": [],\n  \"pagination\": {\n    \"current_page\": 1,\n    \"total_pages\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Destination Directory",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/destination-directory?root=Processed/&path=",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "destination-directory"],
+              "query": [
+                {
+                  "key": "root",
+                  "value": "Processed/"
+                },
+                {
+                  "key": "path",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"folders\": [],\n  \"files\": [\"document1.pdf\", \"document2.pdf\"]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get User Transfers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/transfers",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "transfers"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"transferId\": \"transfer-id-123\",\n    \"status\": \"completed\",\n    \"source_path\": \"Pending Files/document.pdf\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Transfer Folder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceFolderPath\": \"Pending Files/Folder1/\",\n  \"destination\": {\n    \"root\": \"Processed/\",\n    \"path\": \"\"\n  },\n  \"operation\": \"move\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/transfer-folder",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "transfer-folder"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "Accepted",
+              "code": 202,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"Folder transfer started\",\n  \"transferId\": \"transfer-id-123\",\n  \"totalFiles\": 10,\n  \"totalFolders\": 3,\n  \"totalItems\": 13\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Transfer Progress",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/progress/transfer-id-123",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "progress", "transfer-id-123"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"transferId\": \"transfer-id-123\",\n  \"status\": \"in_progress\",\n  \"progress\": 50,\n  \"totalFiles\": 10,\n  \"completedFiles\": 5\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get All Progress",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/progress",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "progress"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"transferId\": \"transfer-id-123\",\n    \"status\": \"in_progress\",\n    \"progress\": 50\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Create Folder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"folderName\": \"NewFolder\",\n  \"currentPath\": \"Pending Files/\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/create-folder",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "create-folder"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"Folder created successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Upload Files",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": "/path/to/file1.pdf"
+                },
+                {
+                  "key": "path",
+                  "value": "Pending Files/",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/upload-files?path=Pending Files/",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "upload-files"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "Pending Files/"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"Upload completed. 1 files uploaded successfully\",\n  \"uploaded_files\": [\n    {\n      \"filename\": \"file1.pdf\",\n      \"path\": \"Pending Files/file1.pdf\",\n      \"size\": 1024000\n    }\n  ],\n  \"total_uploaded\": 1\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get File Preview",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/preview/Pending Files/document.pdf",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "preview", "Pending Files/document.pdf"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"preview_url\": \"http://localhost:5001/backend/api/v1/gcs/proxy/Pending Files/document.pdf?token=...\",\n  \"filename\": \"document.pdf\",\n  \"expires_at\": \"2025-01-01T00:30:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Proxy File Content",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/proxy/Pending Files/document.pdf?token={{jwtToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "proxy", "Pending Files/document.pdf"],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "PDF Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/pdf"
+                },
+                {
+                  "key": "Content-Disposition",
+                  "value": "inline"
+                }
+              ],
+              "body": "[PDF binary content]"
+            }
+          ]
+        },
+        {
+          "name": "List Root Directory",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/list-root?page=1&page_size=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "list-root"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"path\": \"\",\n  \"folders\": [\n    {\n      \"name\": \"Folder1\",\n      \"path\": \"Folder1/\"\n    }\n  ],\n  \"files\": [\n    {\n      \"name\": \"file1.pdf\",\n      \"path\": \"file1.pdf\",\n      \"size\": 1024000,\n      \"updated\": \"2024-01-01T00:00:00Z\"\n    }\n  ],\n  \"pagination\": {\n    \"current_page\": 1,\n    \"total_pages\": 1,\n    \"page_size\": 50\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Path Directory",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/list-path?path=Folder1/Subfolder&page=1&page_size=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "list-path"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "Folder1/Subfolder"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"path\": \"Folder1/Subfolder/\",\n  \"folders\": [],\n  \"files\": [\n    {\n      \"name\": \"document.pdf\",\n      \"path\": \"Folder1/Subfolder/document.pdf\",\n      \"size\": 1024000\n    }\n  ],\n  \"pagination\": {\n    \"current_page\": 1,\n    \"total_pages\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "List With Subfolders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/list-with-subfolders?path=Folder1",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "list-with-subfolders"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "Folder1"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"path\": \"Folder1\",\n  \"tree\": {\n    \"Folder1/\": {\n      \"Subfolder1/\": {\n        \"file1.pdf\": {}\n      },\n      \"file2.pdf\": {}\n    }\n  },\n  \"total_folders\": 2,\n  \"total_files\": 2,\n  \"total_items\": 4\n}"
+            }
+          ]
+        },
+        {
+          "name": "Upload Files to Path",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": "/path/to/file1.pdf"
+                },
+                {
+                  "key": "path",
+                  "value": "Subfolder",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/upload-files-to-path?path=Subfolder",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "upload-files-to-path"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "Subfolder"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"Upload completed. 1 files uploaded successfully\",\n  \"uploaded_files\": [\n    {\n      \"filename\": \"file1.pdf\",\n      \"path\": \"Georgia 14/Pending Files/Subfolder/file1.pdf\",\n      \"gcs_uri\": \"gs://bucket-name/Georgia 14/Pending Files/Subfolder/file1.pdf\",\n      \"blob_name\": \"Georgia 14/Pending Files/Subfolder/file1.pdf\",\n      \"size\": 1024000,\n      \"file_id\": \"firestore-doc-id\",\n      \"created_at\": \"2024-01-01T00:00:00Z\"\n    }\n  ],\n  \"total_uploaded\": 1,\n  \"target_path\": \"Georgia 14/Pending Files/Subfolder\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete File",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filePath\": \"Georgia 14/Pending Files/document.pdf\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/delete-file",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "delete-file"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"File deleted successfully\",\n  \"file_path\": \"Georgia 14/Pending Files/document.pdf\",\n  \"file_name\": \"document.pdf\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Folder",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"folderPath\": \"Georgia 14/Pending Files/Folder to Delete/\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/delete-folder",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "delete-folder"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"Folder deleted successfully\",\n  \"folder_path\": \"Georgia 14/Pending Files/Folder to Delete/\",\n  \"deleted_files_count\": 10,\n  \"deleted_folders_count\": 2,\n  \"deleted_metadata_count\": 10\n}"
+            }
+          ]
+        },
+        {
+          "name": "Rename Folder",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"folderPath\": \"Georgia 14/Pending Files/Old Folder/\",\n  \"newFolderName\": \"New Folder Name\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/rename-folder",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "rename-folder"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"Folder renamed successfully\",\n  \"old_path\": \"Georgia 14/Pending Files/Old Folder/\",\n  \"new_path\": \"Georgia 14/Pending Files/New Folder Name/\",\n  \"new_folder_name\": \"New Folder Name\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get File Metadata",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/file/Georgia%2014%2FPending%20Files%2Fdocument.pdf/metadata",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "file", "Georgia 14/Pending Files/document.pdf", "metadata"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"file_id\": \"firestore-doc-id\",\n  \"file_path\": \"Georgia 14/Pending Files/document.pdf\",\n  \"file_name\": \"document.pdf\",\n  \"folder_path\": \"Georgia 14/Pending Files/\",\n  \"gcs_uri\": \"gs://bucket-name/Georgia 14/Pending Files/document.pdf\",\n  \"file_size\": 1024000,\n  \"content_type\": \"application/pdf\",\n  \"created_at\": \"2024-01-01T00:00:00Z\",\n  \"updated_at\": \"2024-01-01T00:00:00Z\",\n  \"created_by\": \"user@example.com\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Folder Metadata",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/folder/Georgia%2014%2FPending%20Files%2FMy%20Folder%2F/metadata",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "folder", "Georgia 14/Pending Files/My Folder/", "metadata"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"folder_id\": \"firestore-doc-id\",\n  \"folder_path\": \"Georgia 14/Pending Files/My Folder/\",\n  \"folder_name\": \"My Folder\",\n  \"parent_path\": \"Georgia 14/Pending Files/\",\n  \"created_at\": \"2024-01-01T00:00:00Z\",\n  \"updated_at\": \"2024-01-01T00:00:00Z\",\n  \"created_by\": \"user@example.com\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Files in Folder",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/folder/Georgia%2014%2FPending%20Files%2FMy%20Folder%2F/files",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "folder", "Georgia 14/Pending Files/My Folder/", "files"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"folder_path\": \"Georgia 14/Pending Files/My Folder/\",\n  \"files\": [\n    {\n      \"file_id\": \"firestore-doc-id\",\n      \"file_path\": \"Georgia 14/Pending Files/My Folder/document.pdf\",\n      \"file_name\": \"document.pdf\",\n      \"file_size\": 1024000,\n      \"created_at\": \"2024-01-01T00:00:00Z\"\n    }\n  ],\n  \"total_files\": 1\n}"
+            }
+          ]
+        },
+        {
+          "name": "Rename File",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filePath\": \"Georgia 14/Pending Files/document.pdf\",\n  \"newFileName\": \"renamed-document.pdf\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/rename-file",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "rename-file"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"File renamed successfully\",\n  \"old_path\": \"Georgia 14/Pending Files/document.pdf\",\n  \"new_path\": \"Georgia 14/Pending Files/renamed-document.pdf\",\n  \"old_file_name\": \"document.pdf\",\n  \"new_file_name\": \"renamed-document.pdf\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Bulk Delete Files",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filePaths\": [\n    \"Georgia 14/Pending Files/document1.pdf\",\n    \"Georgia 14/Pending Files/document2.pdf\",\n    \"Georgia 14/Pending Files/document3.pdf\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/bulk-delete-files",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "bulk-delete-files"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"Bulk delete completed. 3 files deleted successfully, 0 failed\",\n  \"total_requested\": 3,\n  \"total_successful\": 3,\n  \"total_failed\": 0,\n  \"successful\": [\n    {\n      \"file_path\": \"Georgia 14/Pending Files/document1.pdf\",\n      \"file_name\": \"document1.pdf\"\n    }\n  ],\n  \"failed\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Bulk Delete Folders",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"folderPaths\": [\n    \"Georgia 14/Pending Files/Folder 1/\",\n    \"Georgia 14/Pending Files/Folder 2/\",\n    \"Georgia 14/Pending Files/Folder 3/\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/bulk-delete-folders",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "bulk-delete-folders"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"Bulk delete completed. 3 folders deleted successfully, 0 failed\",\n  \"total_requested\": 3,\n  \"total_successful\": 3,\n  \"total_failed\": 0,\n  \"successful\": [\n    {\n      \"folder_path\": \"Georgia 14/Pending Files/Folder 1/\",\n      \"folder_name\": \"Folder 1\",\n      \"deleted_files_count\": 10,\n      \"deleted_folders_count\": 2,\n      \"deleted_metadata_count\": 10\n    }\n  ],\n  \"failed\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Root Directory",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/list-root?page=1&page_size=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "list-root"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"path\": \"\",\n  \"folders\": [\n    {\n      \"name\": \"Georgia 14\",\n      \"path\": \"Georgia 14/\"\n    }\n  ],\n  \"files\": [],\n  \"pagination\": {\n    \"current_page\": 1,\n    \"total_pages\": 1,\n    \"page_size\": 50,\n    \"total_items\": 1,\n    \"total_folders\": 1,\n    \"total_files\": 0,\n    \"has_next\": false,\n    \"has_prev\": false\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Path Directory",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/list-path?path=Georgia%2014/Pending%20Files/&page=1&page_size=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "list-path"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "Georgia 14/Pending Files/"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"folders\": [\n    {\n      \"name\": \"Subfolder\",\n      \"path\": \"Georgia 14/Pending Files/Subfolder/\"\n    }\n  ],\n  \"files\": [\n    {\n      \"name\": \"document.pdf\",\n      \"path\": \"Georgia 14/Pending Files/document.pdf\",\n      \"size\": 1024000,\n      \"updated\": \"2024-01-01T00:00:00Z\"\n    }\n  ],\n  \"pagination\": {\n    \"current_page\": 1,\n    \"total_pages\": 1,\n    \"page_size\": 50,\n    \"total_items\": 2,\n    \"total_folders\": 1,\n    \"total_files\": 1,\n    \"has_next\": false,\n    \"has_prev\": false\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Destinations with Subfolders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/destinations-with-subfolders?path=&page=1&page_size=50&search=",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "destinations-with-subfolders"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "50"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"items\": [\n    {\n      \"checked\": false,\n      \"id\": \"Georgia 14/Processed Files/\",\n      \"path\": \"Georgia 14/Processed Files/\",\n      \"name\": \"Processed Files\",\n      \"type\": \"folder\",\n      \"children\": [\n        {\n          \"checked\": false,\n          \"id\": \"Georgia 14/Processed Files/2024/\",\n          \"path\": \"Georgia 14/Processed Files/2024/\",\n          \"name\": \"2024\",\n          \"type\": \"sub folder\",\n          \"children\": []\n        }\n      ]\n    }\n  ],\n  \"pagination\": {\n    \"current_page\": 1,\n    \"total_pages\": 1,\n    \"page_size\": 50,\n    \"total_items\": 1,\n    \"total_folders\": 1,\n    \"total_files\": 0,\n    \"has_next\": false,\n    \"has_prev\": false\n  },\n  \"totals\": {\n    \"total_folders\": 2,\n    \"total_files\": 0,\n    \"total_items\": 2\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Destination Path",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/list-destination-path?path=&page=1&page_size=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "list-destination-path"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"folders\": [\n    {\n      \"name\": \"Processed Files\",\n      \"path\": \"Georgia 14/Processed Files/\"\n    }\n  ],\n  \"files\": [],\n  \"pagination\": {\n    \"current_page\": 1,\n    \"total_pages\": 1,\n    \"page_size\": 50,\n    \"total_items\": 1,\n    \"total_folders\": 1,\n    \"total_files\": 0,\n    \"has_next\": false,\n    \"has_prev\": false\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "List with Subfolders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/list-with-subfolders?path=&page=1&page_size=50&search=",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "list-with-subfolders"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "50"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"items\": [\n    {\n      \"checked\": false,\n      \"id\": \"Georgia 14/Pending Files/\",\n      \"path\": \"Georgia 14/Pending Files/\",\n      \"name\": \"Pending Files\",\n      \"type\": \"folder\",\n      \"children\": [\n        {\n          \"checked\": false,\n          \"id\": \"Georgia 14/Pending Files/Subfolder/\",\n          \"path\": \"Georgia 14/Pending Files/Subfolder/\",\n          \"name\": \"Subfolder\",\n          \"type\": \"sub folder\",\n          \"children\": []\n        }\n      ]\n    }\n  ],\n  \"pagination\": {\n    \"current_page\": 1,\n    \"total_pages\": 1,\n    \"page_size\": 50,\n    \"total_items\": 1,\n    \"total_folders\": 1,\n    \"total_files\": 0,\n    \"has_next\": false,\n    \"has_prev\": false\n  },\n  \"totals\": {\n    \"total_folders\": 2,\n    \"total_files\": 0,\n    \"total_items\": 2\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Search Files and Folders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/search?search=document&type=both&path=&page=1&page_size=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "search"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "document"
+                },
+                {
+                  "key": "type",
+                  "value": "both"
+                },
+                {
+                  "key": "path",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"search_term\": \"document\",\n  \"type\": \"both\",\n  \"files\": [\n    {\n      \"file_id\": \"firestore-doc-id\",\n      \"file_path\": \"Georgia 14/Pending Files/document.pdf\",\n      \"file_name\": \"document.pdf\",\n      \"file_size\": 1024000,\n      \"folder_path\": \"Georgia 14/Pending Files/\",\n      \"created_at\": \"2024-01-01T00:00:00Z\"\n    }\n  ],\n  \"folders\": [],\n  \"files_pagination\": {\n    \"current_page\": 1,\n    \"total_pages\": 1,\n    \"page_size\": 50,\n    \"total_items\": 1,\n    \"has_next\": false,\n    \"has_prev\": false\n  },\n  \"folders_pagination\": {\n    \"current_page\": 1,\n    \"total_pages\": 1,\n    \"page_size\": 50,\n    \"total_items\": 0,\n    \"has_next\": false,\n    \"has_prev\": false\n  },\n  \"total_items\": 1,\n  \"total_files\": 1,\n  \"total_folders\": 0\n}"
+            }
+          ]
+        },
+        {
+          "name": "Download Folders as ZIP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"folderPaths\": [\n    \"Georgia 14/Pending Files/Folder 1/\",\n    \"Georgia 14/Pending Files/Folder 2/\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/download-folders",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "download-folders"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/zip"
+                },
+                {
+                  "key": "Content-Disposition",
+                  "value": "attachment; filename=\"folders_20240101_120000.zip\""
+                }
+              ],
+              "body": "[Binary ZIP file content]"
+            }
+          ]
+        },
+        {
+          "name": "Get User Transfers (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/gcs/user-transfers?page=1&limit=50&status=&operation=&transfer_type=&date=&start_date=&end_date=",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "gcs", "user-transfers"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "operation",
+                  "value": ""
+                },
+                {
+                  "key": "transfer_type",
+                  "value": ""
+                },
+                {
+                  "key": "date",
+                  "value": ""
+                },
+                {
+                  "key": "start_date",
+                  "value": ""
+                },
+                {
+                  "key": "end_date",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"transfers\": [\n    {\n      \"id\": \"uuid-transfer-id\",\n      \"user_id\": \"user@example.com\",\n      \"fileName\": \"document.pdf\",\n      \"source\": \"Georgia 14/Pending Files/document.pdf\",\n      \"destination\": \"Georgia 14/Processed Files/document.pdf\",\n      \"operation\": \"move\",\n      \"status\": \"succeeded\",\n      \"transfer_type\": null,\n      \"timestamp\": \"2024-01-15T10:30:00+00:00\"\n    }\n  ],\n  \"pagination\": {\n    \"current_page\": 1,\n    \"page_size\": 50,\n    \"has_next\": true,\n    \"has_prev\": false,\n    \"total_items\": null,\n    \"total_pages\": null\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Processor Rules",
+      "item": [
+        {
+          "name": "Create Processor Rule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ruleName\": \"PDF Invoice Processor\",\n  \"documentTypeLabel\": \"INVOICE\",\n  \"targetParserProcessorId\": \"your-processor-id\",\n  \"isEnabled\": true,\n  \"priority\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/processor-rules",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "processor-rules"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"Processor rule created successfully\",\n  \"id\": \"rule-id-123\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get All Processor Rules",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/processor-rules?enabled_only=true&order_by_priority=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "processor-rules"],
+              "query": [
+                {
+                  "key": "enabled_only",
+                  "value": "true"
+                },
+                {
+                  "key": "order_by_priority",
+                  "value": "true"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"id\": \"rule-id-1\",\n    \"ruleName\": \"PDF Invoice Processor\",\n    \"documentTypeLabel\": \"INVOICE\",\n    \"targetParserProcessorId\": \"processor-123\",\n    \"isEnabled\": true,\n    \"priority\": 1\n  },\n  {\n    \"id\": \"rule-id-2\",\n    \"ruleName\": \"General Document Processor\",\n    \"documentTypeLabel\": \"GENERAL_DOCUMENT\",\n    \"targetParserProcessorId\": \"processor-456\",\n    \"isEnabled\": true,\n    \"priority\": 2\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Get Processor Rule by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/processor-rules/rule-id-123",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "processor-rules", "rule-id-123"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": \"rule-id-123\",\n  \"ruleName\": \"PDF Invoice Processor\",\n  \"documentTypeLabel\": \"INVOICE\",\n  \"targetParserProcessorId\": \"processor-123\",\n  \"isEnabled\": true,\n  \"priority\": 1\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Processor Rule",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isEnabled\": false,\n  \"priority\": 3\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/processor-rules/rule-id-123",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "processor-rules", "rule-id-123"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"Processor rule updated successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Processor Rule",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/processor-rules/rule-id-123",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "processor-rules", "rule-id-123"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"Processor rule deleted successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Batch Processing",
+      "item": [
+        {
+          "name": "Start Batch Processing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bucket_name\": \"your-bucket-name\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/batch/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "batch", "start"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"Batch processing started successfully with run ID: run-id-123\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Batch Reports",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/batch/reports",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "batch", "reports"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"run_id\": \"run-id-123\",\n    \"bucket_name\": \"your-bucket-name\",\n    \"status\": \"completed\",\n    \"started_at\": \"2025-01-01T00:00:00Z\",\n    \"completed_at\": \"2025-01-01T12:00:00Z\",\n    \"total_files\": 100,\n    \"processed_files\": 95\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Get GCS Buckets",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/batch/buckets",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "batch", "buckets"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"name\": \"bucket-1\",\n    \"location\": \"us-central1\"\n  },\n  {\n    \"name\": \"bucket-2\",\n    \"location\": \"us-east1\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Get Run Files",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/batch/reports/run-id-123/files?limit=100&start_after=",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "batch", "reports", "run-id-123", "files"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "start_after",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"files\": [\n    {\n      \"filename\": \"file1.pdf\",\n      \"status\": \"completed\",\n      \"processed_at\": \"2025-01-01T00:00:00Z\"\n    }\n  ],\n  \"next_cursor\": \"next-file-id\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Trigger Batch Processing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/batch/trigger",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "batch", "trigger"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"Manual trigger successful\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Set Batch Config",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bucket_name\": \"your-bucket-name\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/batch/config",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "batch", "config"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"Configuration saved successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Batch Config",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/batch/config",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "batch", "config"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"default_bucket_name\": \"your-bucket-name\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Start Categorization Batch",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/batch/system/start-categorization-batch",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "batch", "system", "start-categorization-batch"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "Accepted",
+              "code": 202,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"msg\": \"Categorization batch process has been initiated.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Add Ignored Folder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"folder_name\": \"Temp/\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/batch/ignored-folders",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "batch", "ignored-folders"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"msg\": \"Folder 'Temp/' added to ignored list.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Ignored Folders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/batch/ignored-folders",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "batch", "ignored-folders"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"ignored_folders\": [\"Temp/\", \"Archive/\"]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Logs",
+      "item": [
+        {
+          "name": "Get Processing Logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/logs?limit=50&start_after=&level=&step=&original_filename=&document_id=&worker_id=",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "logs"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "start_after",
+                  "value": ""
+                },
+                {
+                  "key": "level",
+                  "value": ""
+                },
+                {
+                  "key": "step",
+                  "value": ""
+                },
+                {
+                  "key": "original_filename",
+                  "value": ""
+                },
+                {
+                  "key": "document_id",
+                  "value": ""
+                },
+                {
+                  "key": "worker_id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"logs\": [\n    {\n      \"id\": \"log-id-1\",\n      \"timestamp\": \"2025-01-01T00:00:00Z\",\n      \"level\": \"INFO\",\n      \"step\": \"upload_document\",\n      \"worker_id\": \"worker-1\",\n      \"document_id\": \"doc-id\",\n      \"message\": \"Document uploaded successfully\",\n      \"details\": {}\n    }\n  ],\n  \"next_cursor\": \"next-log-id\",\n  \"limit\": 50\n}"
+            }
+          ]
+        },
+        {
+          "name": "Export Logs as CSV",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/logs/export?level=INFO&step=upload_document",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "logs", "export"],
+              "query": [
+                {
+                  "key": "level",
+                  "value": "INFO"
+                },
+                {
+                  "key": "step",
+                  "value": "upload_document"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "CSV Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/csv"
+                },
+                {
+                  "key": "Content-Disposition",
+                  "value": "attachment; filename=processing_logs.csv"
+                }
+              ],
+              "body": "timestamp,level,step,worker_id,document_id,message,details,id\n2025-01-01T00:00:00Z,INFO,upload_document,worker-1,doc-id,Document uploaded successfully,\"{}\",log-id-1\n"
+            }
+          ]
+        },
+        {
+          "name": "Get System Logs for Message",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/logs/sessions/session-id/messages/message-id/system_logs",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "logs", "sessions", "session-id", "messages", "message-id", "system_logs"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": {\n    \"id\": \"message-id\",\n    \"query\": \"What is this about?\"\n  },\n  \"logs\": [\n    {\n      \"id\": \"log-id\",\n      \"level\": \"INFO\",\n      \"message\": \"Processing query\",\n      \"timestamp\": \"2025-01-01T00:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "System Diagnosis",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/system/diagnosis",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "system", "diagnosis"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"Configuration Variables\": {\n    \"PROJECT_ID\": {\"status\": \"OK\", \"value\": \"your-project-id\"}\n  },\n  \"Google Cloud Storage\": {\"status\": \"OK\", \"detail\": \"Bucket accessible\"},\n  \"Firestore\": {\"status\": \"OK\", \"detail\": \"Connection successful\"}\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Firestore Indexes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/system/create-indexes",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "system", "create-indexes"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"Completed\",\n  \"message\": \"Firestore index creation process finished.\",\n  \"results\": [\n    {\n      \"index\": \"document_metadata (status, upload_timestamp)\",\n      \"status\": \"Initiated\",\n      \"detail\": \"Operation: operations/abc123\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Setup Vector Search",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/system/setup-vector-search",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "system", "setup-vector-search"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"Success\",\n  \"message\": \"Vector Search resources setup completed\",\n  \"index_id\": \"index-123\",\n  \"endpoint_id\": \"endpoint-456\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Setup Firestore Database",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"locationId\": \"us-central1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/system/setup-firestore-database",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "system", "setup-firestore-database"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "Accepted",
+              "code": 202,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"Initiated\",\n  \"message\": \"Firestore database 'my-database' creation initiated in location 'us-central1'. Operation: operations/abc123.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Start Bulk Process",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gcs_prefix\": \"Pending Files/\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/system/start-bulk-process",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "system", "start-bulk-process"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "Accepted",
+              "code": 202,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"Success\",\n  \"message\": \"Bulk processing initiated for prefix 'Pending Files/'. Tasks are being enqueued.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Bulk Process Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/system/bulk-process-stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "system", "bulk-process-stats"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"run_id\": \"run-id-123\",\n  \"status\": \"running\",\n  \"files_found\": 100,\n  \"completed\": 50,\n  \"start_time\": \"2025-01-01T00:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Processing Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/system/processing-dashboard-stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "system", "processing-dashboard-stats"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"total_documents\": 1000,\n  \"total_chunks\": 5000,\n  \"status_counts\": {\n    \"Pending\": 50,\n    \"Processing\": 100,\n    \"Completed\": 800,\n    \"Failed\": 50\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Process Pending Documents",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/system/process-pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "system", "process-pending"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "Accepted",
+              "code": 202,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"Success\",\n  \"message\": \"Initiated processing for pending documents. Enqueued: 50, Errors/Skipped: 0.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reset Stuck Documents",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/system/reset-stuck-documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "system", "reset-stuck-documents"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"Success\",\n  \"message\": \"Reset 10 stuck documents to 'pending' state. Encountered 0 errors during cleanup/reset.\",\n  \"reset_count\": 10,\n  \"cleanup_errors\": 0\n}"
+            }
+          ]
+        },
+        {
+          "name": "Clear Processing Data",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v1/system/clear-processing-data",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v1", "system", "clear-processing-data"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"Success\",\n  \"message\": \"Successfully cleared Firestore processing data and initiated removal of 1000 Vector Search datapoints. Redis queue also cleared.\",\n  \"details\": {\n    \"document_metadata\": {\"deleted\": 100},\n    \"document_chunks\": {\"deleted\": 1000}\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Debug Routes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/debug/routes",
+              "host": ["{{baseUrl}}"],
+              "path": ["debug", "routes"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/html"
+                }
+              ],
+              "body": "<pre>endpoint_name                    methods              /path/to/route\n...</pre>"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "API v2 - Secure Documents",
+      "item": [
+        {
+          "name": "Get Secure History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v2/docs/history?limit=10&start_after=&search=&status=",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v2", "docs", "history"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "start_after",
+                  "value": ""
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "status",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"history\": [\n    {\n      \"id\": \"doc-id\",\n      \"original_filename\": \"sample.pdf\",\n      \"status\": \"Completed\"\n    }\n  ],\n  \"next_cursor\": \"next-doc-id\",\n  \"total_items\": 50\n}"
+            }
+          ]
+        },
+        {
+          "name": "Secure Chat with Documents",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"What are the main topics discussed?\",\n  \"session_id\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v2/docs/chat",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v2", "docs", "chat"]
+            }
+          },
+          "response": [
+            {
+              "name": "Streaming Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/event-stream"
+                }
+              ],
+              "body": "data: {\"status\": \"Embedding your query...\"}\n\ndata: {\"chunk\": \"Based on the documents...\"}\n\ndata: {\"event\": \"done\", \"session_id\": \"session-id\", \"references\": [...]}"
+            }
+          ]
+        },
+        {
+          "name": "Get Secure Document Metadata",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v2/docs/doc-id/metadata",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v2", "docs", "doc-id", "metadata"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"msg\": \"Access granted.\",\n  \"document_id\": \"doc-id\",\n  \"categories\": [\"Category1\", \"Category2\"]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "API v2 - System",
+      "item": [
+        {
+          "name": "Get All Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwtToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v2/system/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v2", "system", "categories"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\"Category1\", \"Category2\", \"Category3\"]"
+            }
+          ]
+        },
+        {
+          "name": "Start Categorization Batch (V2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v2/system/start-categorization-batch",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v2", "system", "start-categorization-batch"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "Accepted",
+              "code": 202,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"msg\": \"Categorization batch process has been initiated.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Valid Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backend/api/v2/system/valid-categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["backend", "api", "v2", "system", "valid-categories"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  \"Category1\",\n  \"Category2\",\n  \"Category3\"\n]"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "// Set default headers for all requests",
+          "pm.request.headers.add({key: 'User-Agent', value: 'Postman/GeorgiaDigitizationPlatform'});"
+        ]
+      }
+    }
+  ]
+}

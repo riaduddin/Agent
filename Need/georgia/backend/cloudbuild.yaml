@@ -1,0 +1,42 @@
+options:
+  logging: CLOUD_LOGGING_ONLY
+ 
+steps:
+# 1) Build & push image
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'build',
+    '-f', 'georgia-digitization-platform/backend/Dockerfile',
+    '-t', 'us-east1-docker.pkg.dev/${_ARTIFACT_REG_NM}/gadhs-dd-reg02-backend/backend-image:${SHORT_SHA}',
+    'georgia-digitization-platform/backend'
+  ]
+ 
+# 2) Fetch cluster credentials so kubectl can talk to GKE
+# - name: 'gcr.io/cloud-builders/gcloud'
+#   entrypoint: 'bash'
+#   args: [
+#     '-c',
+#     'gcloud container clusters get-credentials "$_CLUSTER_NAME" --region "$_CLUSTER_REGION" --project "$PROJECT_ID"'
+#   ]
+ 
+# 3) Patch the Deployment with the new image (rolling update)
+# - name: 'gcr.io/cloud-builders/kubectl'
+#   env:
+#     - 'CLOUDSDK_COMPUTE_REGION=${_CLUSTER_REGION}'
+#     - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLUSTER_NAME}'
+#   args: [
+#     'set', 'image',
+#     'deployment/${_DEPLOYMENT}',
+#     '${_CONTAINER}=us-east1-docker.pkg.dev/gadhs-dd-uat/gadhs-dd-reg02-backend/backend-image:${SHORT_SHA}',
+#     '--namespace=${_NAMESPACE}'
+#   ]
+ 
+images:
+- 'us-east1-docker.pkg.dev/${_ARTIFACT_REG_NM}/gadhs-dd-reg02-backend/backend-image:${SHORT_SHA}'
+ 
+substitutions:
+  _CLUSTER_NAME:   'gadhs-dd-autopilot-cluster'
+  _CLUSTER_REGION: 'us-east1'
+  _NAMESPACE:      'default'
+  _DEPLOYMENT:     'georgia-backend-depl'
+  _CONTAINER:      'main-container'

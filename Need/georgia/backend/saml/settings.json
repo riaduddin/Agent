@@ -1,0 +1,22 @@
+{
+  "sp": {
+    "entityId": "https://intellidocfinder-dfcsffs.dhs.ga.gov/backend/api/v1/auth/metadata/",
+    "assertionConsumerService": {
+      "url": "https://intellidocfinder-dfcsffs.dhs.ga.gov/backend/api/v1/auth/sso/acs",
+      "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+    }
+  },
+  "idp": {
+    "entityId": "http://www.okta.com/exk1lkg6mwaAZpE3P358",
+    "singleSignOnService": {
+      "url": "https://connect.gets.ga.gov/app/gets_dhsdfcs_1/exk1lkg6mwaAZpE3P358/sso/saml",
+      "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+    },
+    "x509cert": "MIIDmDCCAoCgAwIBAgIGAZfCBneWMA0GCSqGSIb3DQEBCwUAMIGMMQswCQYDVQQGEwJVUzETMBEGA1UECAwKQ2FsaWZvcm5pYTEWMBQGA1UEBwwNU2FuIEZyYW5jaXNjbzENMAsGA1UECgwET2t0YTEUMBIGA1UECwwLU1NPUHJvdmlkZXIxDTALBgNVBAMMBGdldHMxHDAaBgkqhkiG9w0BCQEWDWluZm9Ab2t0YS5jb20wHhcNMjUwNjMwMTgwNzEzWhcNMzUwNjMwMTgwODEyWjCBjDELMAkGA1UEBhMCVVMxEzARBgNVBAgMCkNhbGlmb3JuaWExFjAUBgNVBAcMDVNhbiBGcmFuY2lzY28xDTALBgNVBAoMBE9rdGExFDASBgNVBAsMC1NTT1Byb3ZpZGVyMQ0wCwYDVQQDDARnZXRzMRwwGgYJKoZIhvcNAQkBFg1pbmZvQG9rdGEuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkIBjRzquU8HgTagxUKSHCR1HRHD79YoWnosHulbX6s6/VQgSYMBijkF/5ym8AvS90ovaSE27iAYbJIdBUsbO4o2VU4htCR4mcPvWAx+PvTVUCGT7ykOJqaGWOreQvF63oZpQA6Po8INuEwc86RPk6gPlBrKRzpRzgglLLKoMnaLD7XO+UaBxze6eMX0MEBSQwkQhuoYaXD/VqEnq9C/qVyTkhLAtUyhdG0WRsqhW1LW0U8ZmFKOmb7P1ljkWHXb4HlMtPGkq5l4UFny6AymlKlzimtc3IVAf/3Is9vzfz3BwT+61qkcXaufkN0RqrblH7kOtyneInfk6k3GJlrJ+RQIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQArvWJu4fk33eB5taCpOatxj4K+BsQddu9VQlOSyVdcKcW4I5tHnwi4+hhQhn+mmQ+opyW0xygeJTXQ6Vls39ykXOsDbKVqykGdCDY+GCQQ+gnU4Glsw93rNd+IVdnH7szzr3n8kBisEqBXir1p4mwX2UgoGyWmru2+1buQCTi8iRMeID0DdbnVoVKZfRyFnqqqv1NwDg77FJDLkjJUmXeainu78xaXoGoUQtlUPu1x9cm/cvZuiS3Xr8zmbJRGyEoGA/8MfudFYoyErWe8sSwKKr6QXwyGtRch1rj8JAG7PkRA3p339J7FHnhof2645d/YXauQx505vZwaHdo0f8qN"
+  },
+  "security": {
+    "authnRequestsSigned": false,
+    "wantAssertionsSigned": true,
+    "wantMessageSigned": false
+  }
+}
