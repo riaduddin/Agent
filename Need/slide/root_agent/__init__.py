@@ -1,0 +1,3 @@
+from .agent import SlideOrchestrationAgent
+
+root_agent=SlideOrchestrationAgent

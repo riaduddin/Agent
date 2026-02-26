@@ -1,0 +1,173 @@
+name: Docker Build and Push
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25  # Add timeout to catch issues early
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Login to GitHub Container Registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3  # Updated to v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.ACCESS_TOKEN  }}  # Use built-in GITHUB_TOKEN
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          install: true
+
+      - name: Bootstrap Buildx with retry
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          command: |
+            docker buildx create --use --name ci-builder || true
+            docker buildx inspect --bootstrap
+
+      - name: Set Short Commit Hash
+        id: vars
+        run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
+
+      - name: Build and Push Docker Image (push event)
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64  
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ env.SHORT_SHA }}
+            ghcr.io/${{ github.repository }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false  # Disable for faster builds
+
+      - name: Build Image (PR, no push)
+        if: github.event_name == 'pull_request'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+  # deploy:
+  #   needs: build-and-push
+  #   runs-on: ubuntu-latest
+  #   if: github.event_name != 'pull_request'
+  #   steps:
+  #     - name: "Checkout GitHub Action"
+  #       uses: actions/checkout@v4
+      
+  #     - name: "Set Short Commit Hash"
+  #       run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
+      
+  #     - name: "Setup SSH"
+  #       uses: webfactory/ssh-agent@v0.9.0
+  #       with:
+  #         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      
+  #     - name: "Add Server to Known Hosts"
+  #       run: |
+  #         ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+      
+  #     - name: "Login to GitHub Container Registry on Server"
+  #       run: |
+  #         ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
+  #           echo "${{ secrets.ACCESS_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+  #         EOF
+      
+  #     - name: "Deploy to Server with Rollback Support"
+  #       id: deploy
+  #       run: |
+  #         SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+  #         ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} bash << EOF
+  #           set -e
+  #           cd ${{ secrets.DEPLOY_PATH }}
+            
+  #           # Save current image tag before updating (only for slide_creation_agent service)
+  #           OLD_TAG=\$(sed -n '/^[[:space:]]*slide_creation_agent:/,/^[[:space:]]*[a-z_]*:/ { /image:.*ghcr\.io.*presentation-gen-service:/s/.*ghcr\.io\/[^\/]*\/presentation-gen-service:\([a-fA-F0-9]*\).*/\1/p; }' docker-compose.yml | head -1)
+  #           echo "Current image tag: \${OLD_TAG}"
+  #           echo "New image tag: ${SHORT_SHA}"
+            
+  #           # Backup docker-compose.yml before changes
+  #           cp docker-compose.yml docker-compose.yml.backup
+            
+  #           # Update docker-compose.yml with new image tag for slide_creation_agent service only
+  #           sed -i '/^[[:space:]]*slide_creation_agent:/,/^[[:space:]]*[a-z_]*:/ { /image:.*ghcr\.io.*presentation-gen-service:/s|ghcr\.io/[^/]*/presentation-gen-service:[a-fA-F0-9]*|ghcr.io/${{ github.repository_owner }}/presentation-gen-service:${SHORT_SHA}|g; }' docker-compose.yml
+            
+  #           # Verify the image exists and has size before pulling
+  #           echo "Verifying image exists in registry..."
+  #           if ! docker manifest inspect ghcr.io/${{ github.repository_owner }}/presentation-gen-service:${SHORT_SHA} > /dev/null 2>&1; then
+  #             echo "ERROR: Image ghcr.io/${{ github.repository_owner }}/presentation-gen-service:${SHORT_SHA} not found in registry!"
+  #             echo "Rolling back to previous image tag: \${OLD_TAG}"
+  #             cp docker-compose.yml.backup docker-compose.yml
+  #             exit 1
+  #           fi
+            
+  #           # Pull new image
+  #           echo "Pulling new image..."
+  #           if ! docker compose pull slide_creation_agent; then
+  #             echo "ERROR: Failed to pull new image!"
+  #             echo "Rolling back to previous image tag: \${OLD_TAG}"
+  #             cp docker-compose.yml.backup docker-compose.yml
+  #             docker compose up -d slide_creation_agent
+  #             exit 1
+  #           fi
+            
+  #           # Restart service with new image
+  #           echo "Restarting service with new image..."
+  #           if ! docker compose up -d slide_creation_agent; then
+  #             echo "ERROR: Failed to start service with new image!"
+  #             echo "Rolling back to previous image tag: \${OLD_TAG}"
+  #             cp docker-compose.yml.backup docker-compose.yml
+  #             docker compose up -d slide_creation_agent
+  #             exit 1
+  #           fi
+            
+  #           # Wait a bit for service to start
+  #           sleep 20
+            
+  #           # Verify container is running
+  #           echo "Verifying container is running..."
+  #           if ! docker compose ps | grep -q "slide_creation_agent.*Up"; then
+  #             echo "ERROR: slide_creation_agent container is not running!"
+  #             echo "Rolling back to previous image tag: \${OLD_TAG}"
+  #             cp docker-compose.yml.backup docker-compose.yml
+  #             docker compose up -d slide_creation_agent
+  #             exit 1
+  #           fi
+            
+  #           # Show running containers
+  #           docker compose ps
+            
+  #           # Save old tag to file for manual rollback if needed
+  #           echo "\${OLD_TAG}" > .previous_image_tag
+            
+  #           echo "Deployment completed successfully!"
+  #           echo "New image tag: ${SHORT_SHA}"
+  #           echo "Previous image tag (saved): \${OLD_TAG}"
+  #         EOF

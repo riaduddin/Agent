@@ -1,0 +1,7 @@
+Error from the browser agent:
+
+Raw response:
+{"candidates":[{"content":{},"finish_message":"Malformed function call: \\nprint(default_api.brave_search_safe(query='tesla marketing strategy 2023 2024', count=5))\\n```\"\n}\n","finish_reason":"MALFORMED_FUNCTION_CALL"}],"create_time":"2025-07-03T02:16:47.275289Z","response_id":"D-hlaNnmELaonvgP0IjpiA8","model_version":"gemini-2.0-flash","usage_metadata":{"prompt_token_count":608,"prompt_tokens_details":[{"modality":"TEXT","token_count":608}],"total_token_count":608,"traffic_type":"ON_DEMAND"},"automatic_function_calling_history":[]}
+-----------------------------------------------------------
+
+2025-07-03 08:16:50,232 - INFO - fast_api.py:793 - Generated event in agent run streaming: {"errorCode":"MALFORMED_FUNCTION_CALL","errorMessage":"Malformed function call: \\nprint(default_api.brave_search_safe(query='tesla marketing strategy 2023 2024', count=5))\\n```\"\n}\n","usageMetadata":{"promptTokenCount":608,"promptTokensDetails":[{"modality":"TEXT","tokenCount":608}],"totalTokenCount":608,"trafficType":"ON_DEMAND"},"invocationId":"e-06110977-ebd6-486a-839c-ff4914ca9deb","author":"browser_agent","actions":{"stateDelta":{},"artifactDelta":{},"requestedAuthConfigs":{}},"id":"uyKdr1u4","timestamp":1751509000.147489}

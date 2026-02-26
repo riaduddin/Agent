@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.IO Test Client</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .connected { background-color: #d4edda; color: #155724; }
+        .disconnected { background-color: #f8d7da; color: #721c24; }
+        .processing { background-color: #fff3cd; color: #856404; }
+        .completed { background-color: #d1ecf1; color: #0c5460; }
+        
+        .controls {
+            margin: 20px 0;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        
+        .events {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #f8f9fa;
+        }
+        .event {
+            margin: 10px 0;
+            padding: 10px;
+            border-left: 4px solid #007bff;
+            background: white;
+            border-radius: 4px;
+        }
+        .event.user { border-left-color: #28a745; }
+        .event.agent { border-left-color: #ffc107; }
+        .event.terminal { border-left-color: #dc3545; }
+        
+        .event-header {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .event-content {
+            color: #666;
+            font-size: 14px;
+        }
+        .event-meta {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        textarea { height: 100px; resize: vertical; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Socket.IO Test Client</h1>
+        <p>This client connects to the Socket.IO server and receives real-time agent output.</p>
+        
+        <div id="status" class="status disconnected">❌ Disconnected</div>
+        
+        <div class="controls">
+            <h3>📝 Create Presentation</h3>
+            <textarea id="message" placeholder="Enter your presentation request...">Create a presentation about Artificial Intelligence in Education. Include sections on personalized learning, intelligent tutoring systems, and educational data mining. Make it comprehensive for educators and students.</textarea>
+            <br>
+            <button onclick="createPresentation()" id="createBtn">Create Presentation</button>
+            
+            <h3>🚀 Start Presentation</h3>
+            <input type="text" id="pId" placeholder="Presentation ID" readonly>
+            <br>
+            <button onclick="startPresentation()" id="startBtn" disabled>Start Presentation</button>
+            
+            <h3>🔌 Socket.IO Connection</h3>
+            <button onclick="connectSocket()" id="connectBtn">Connect to Socket.IO</button>
+            <button onclick="disconnectSocket()" id="disconnectBtn" disabled>Disconnect</button>
+        </div>
+        
+        <div class="controls">
+            <h3>📊 Events Received (<span id="eventCount">0</span>)</h3>
+            <button onclick="clearEvents()">Clear Events</button>
+        </div>
+        
+        <div id="events" class="events">
+            <div class="event">
+                <div class="event-header">📋 Ready to receive events...</div>
+                <div class="event-content">Connect to Socket.IO and start a presentation to see real-time agent output.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let socket = null;
+        let presentationId = null;
+        let eventCount = 0;
+        
+        // JWT Token (replace with your actual token)
+        const JWT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2ODgwODdlMzA1MTk0OTc2YWVhOTk0MDMiLCJzdWIiOiI2ODgwODdlMzA1MTk0OTc2YWVhOTk0MDMiLCJlbWFpbCI6InJycmlhZHVkZGluQGdtYWlsLmNvbSIsInBhY2thZ2UiOiJ1bmxpbWl0ZWQiLCJpc192ZXJpZmllZCI6dHJ1ZSwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjA5MzM4Njl9.E9cUSlM-uQRrQ48gpH47t7eUN9ioem-A63CCPVJhZnI";
+        const BASE_URL = "http://127.0.0.1:8060";
+        
+        // Socket.IO event handlers
+        function onConnect() {
+            updateStatus("✅ Connected to Socket.IO", "connected");
+            document.getElementById('connectBtn').disabled = true;
+            document.getElementById('disconnectBtn').disabled = false;
+        }
+        
+        function onDisconnect() {
+            updateStatus("❌ Disconnected from Socket.IO", "disconnected");
+            document.getElementById('connectBtn').disabled = false;
+            document.getElementById('disconnectBtn').disabled = true;
+        }
+        
+        function onAgentOutput(data) {
+            eventCount++;
+            document.getElementById('eventCount').textContent = eventCount;
+            
+            addEvent('agent_output', data);
+        }
+        
+        function onMessage(data) {
+            eventCount++;
+            document.getElementById('eventCount').textContent = eventCount;
+            
+            addEvent('message', data);
+        }
+        
+        // Socket.IO connection
+        function connectSocket() {
+            if (socket) {
+                socket.disconnect();
+            }
+            
+            socket = io(BASE_URL, {
+                auth: {
+                    token: JWT_TOKEN
+                }
+            });
+            
+            socket.on('connect', onConnect);
+            socket.on('disconnect', onDisconnect);
+            socket.on('agent_output', onAgentOutput);
+            socket.on('message', onMessage);
+        }
+        
+        function disconnectSocket() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
+        }
+        
+        // API calls
+        async function createPresentation() {
+            const message = document.getElementById('message').value;
+            if (!message.trim()) {
+                alert('Please enter a message');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${BASE_URL}/create-presentation`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${JWT_TOKEN}`
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        file_urls: []
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    presentationId = data.p_id;
+                    document.getElementById('pId').value = presentationId;
+                    document.getElementById('startBtn').disabled = false;
+                    addEvent('api', { type: 'create_presentation', data: data });
+                } else {
+                    addEvent('error', { type: 'create_presentation', error: data });
+                }
+            } catch (error) {
+                addEvent('error', { type: 'create_presentation', error: error.message });
+            }
+        }
+        
+        async function startPresentation() {
+            if (!presentationId) {
+                alert('Please create a presentation first');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${BASE_URL}/start-presentation/${presentationId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${JWT_TOKEN}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addEvent('api', { type: 'start_presentation', data: data });
+                    
+                    // Join the presentation room
+                    if (socket) {
+                        socket.emit('join_presentation', { p_id: presentationId });
+                    }
+                } else {
+                    addEvent('error', { type: 'start_presentation', error: data });
+                }
+            } catch (error) {
+                addEvent('error', { type: 'start_presentation', error: error.message });
+            }
+        }
+        
+        // UI functions
+        function updateStatus(message, className) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${className}`;
+        }
+        
+        function addEvent(type, data) {
+            const eventsEl = document.getElementById('events');
+            const eventEl = document.createElement('div');
+            eventEl.className = `event ${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const author = data.author || 'unknown';
+            const pId = data.p_id || 'unknown';
+            
+            let content = '';
+            if (data.html_content) {
+                content = `🎨 HTML Content: ${data.html_content.substring(0, 100)}...`;
+            } else if (data.thinking) {
+                content = `💭 Thinking: ${data.thinking.substring(0, 100)}...`;
+            } else if (data.text) {
+                content = `📝 Text: ${data.text.substring(0, 100)}...`;
+            } else if (data.topic) {
+                content = `🎯 Topic: ${data.topic}`;
+            } else {
+                content = `📄 Content: ${JSON.stringify(data).substring(0, 100)}...`;
+            }
+            
+            eventEl.innerHTML = `
+                <div class="event-header">📨 ${type.toUpperCase()} - ${author}</div>
+                <div class="event-content">${content}</div>
+                <div class="event-meta">P_ID: ${pId} | Time: ${timestamp}</div>
+            `;
+            
+            eventsEl.insertBefore(eventEl, eventsEl.firstChild);
+        }
+        
+        function clearEvents() {
+            document.getElementById('events').innerHTML = '';
+            eventCount = 0;
+            document.getElementById('eventCount').textContent = eventCount;
+        }
+        
+        // Initialize
+        updateStatus("❌ Disconnected", "disconnected");
+    </script>
+</body>
+</html>

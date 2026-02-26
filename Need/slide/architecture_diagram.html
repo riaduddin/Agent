@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presentation Generation Service - Architecture</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+        }
+        
+        .architecture {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .layer {
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 25px;
+            position: relative;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        
+        .layer-title {
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background: white;
+            padding: 5px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        
+        .components {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        
+        .component {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 20px;
+            min-width: 200px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .component:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.2);
+        }
+        
+        .component-title {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .component-desc {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+        
+        .arrow {
+            text-align: center;
+            font-size: 2em;
+            color: #667eea;
+            margin: 10px 0;
+        }
+        
+        .flow {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 40px;
+        }
+        
+        .flow-title {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .flow-step {
+            background: white;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .flow-step-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+        
+        .feature-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .feature-title {
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        
+        .feature-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+            color: #4ade80;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+        
+        .stat-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2.5em;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .stat-label {
+            color: #666;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Presentation Generation Service Architecture</h1>
+        
+        <div class="architecture">
+            <!-- Client Layer -->
+            <div class="layer">
+                <div class="layer-title">CLIENT LAYER</div>
+                <div class="components">
+                    <div class="component">
+                        <div class="component-title">🌐 Web Browser</div>
+                        <div class="component-desc">WebSocket + REST API</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-title">📱 Mobile App</div>
+                        <div class="component-desc">Native WebSocket</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-title">🔧 Postman</div>
+                        <div class="component-desc">Testing & Debug</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="arrow">⬇️ JWT Authentication ⬇️</div>
+            
+            <!-- Application Layer -->
+            <div class="layer">
+                <div class="layer-title">APPLICATION LAYER (FastAPI)</div>
+                <div class="components">
+                    <div class="component">
+                        <div class="component-title">⚡ Worker 1</div>
+                        <div class="component-desc">WebSocket Manager<br>REST Endpoints</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-title">⚡ Worker 2</div>
+                        <div class="component-desc">WebSocket Manager<br>REST Endpoints</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-title">⚡ Worker N</div>
+                        <div class="component-desc">WebSocket Manager<br>REST Endpoints</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="arrow">⬇️ Redis Pub/Sub + Locks ⬇️</div>
+            
+            <!-- Infrastructure Layer -->
+            <div class="layer">
+                <div class="layer-title">INFRASTRUCTURE LAYER</div>
+                <div class="components">
+                    <div class="component">
+                        <div class="component-title">📡 Redis</div>
+                        <div class="component-desc">
+                            • Pub/Sub Broadcasting<br>
+                            • Distributed Locks<br>
+                            • Connection Registry<br>
+                            • Session State
+                        </div>
+                    </div>
+                    <div class="component">
+                        <div class="component-title">🗄️ MongoDB</div>
+                        <div class="component-desc">
+                            • Presentations<br>
+                            • Agent Outputs<br>
+                            • User Data<br>
+                            • Timeline Events
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="arrow">⬇️ Agent Processing ⬇️</div>
+            
+            <!-- Agent Layer -->
+            <div class="layer">
+                <div class="layer-title">AGENT LAYER (AI Processing)</div>
+                <div class="components">
+                    <div class="component">
+                        <div class="component-title">🤖 Root Agent</div>
+                        <div class="component-desc">Orchestrator</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-title">📝 Spec Extractor</div>
+                        <div class="component-desc">Requirements</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-title">🔍 Keyword Research</div>
+                        <div class="component-desc">Content Ideas</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-title">🎨 Slide Generator</div>
+                        <div class="component-desc">HTML Slides</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data Flow -->
+        <div class="flow">
+            <div class="flow-title">📊 Real-Time Data Flow</div>
+            <div class="flow-step">
+                <span class="flow-step-number">1</span>
+                <strong>Client connects</strong> via WebSocket with JWT token
+            </div>
+            <div class="flow-step">
+                <span class="flow-step-number">2</span>
+                <strong>Server verifies</strong> token and checks presentation status
+            </div>
+            <div class="flow-step">
+                <span class="flow-step-number">3</span>
+                <strong>Server sends</strong> status message (fresh connection - only new data)
+            </div>
+            <div class="flow-step">
+                <span class="flow-step-number">4</span>
+                <strong>Worker acquires lock</strong> in Redis for presentation processing
+            </div>
+            <div class="flow-step">
+                <span class="flow-step-number">5</span>
+                <strong>Agent starts processing</strong> in background (async)
+            </div>
+            <div class="flow-step">
+                <span class="flow-step-number">6</span>
+                <strong>Agent writes output</strong> to MongoDB + publishes to Redis Pub/Sub
+            </div>
+            <div class="flow-step">
+                <span class="flow-step-number">7</span>
+                <strong>All workers receive</strong> message from Redis and forward to connected clients
+            </div>
+            <div class="flow-step">
+                <span class="flow-step-number">8</span>
+                <strong>Client receives</strong> real-time slide generation updates
+            </div>
+            <div class="flow-step">
+                <span class="flow-step-number">9</span>
+                <strong>Agent completes</strong>, sends terminal message, releases lock
+            </div>
+        </div>
+        
+        <!-- Key Features -->
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-title">🔄 Real-Time Streaming</div>
+                <ul class="feature-list">
+                    <li>WebSocket connections</li>
+                    <li>Only new data sent</li>
+                    <li>No backfill for fresh connections</li>
+                    <li>Instant updates</li>
+                </ul>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-title">🔐 Security</div>
+                <ul class="feature-list">
+                    <li>JWT authentication</li>
+                    <li>User ownership validation</li>
+                    <li>Token-based access</li>
+                    <li>Secure connections</li>
+                </ul>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-title">📈 Scalability</div>
+                <ul class="feature-list">
+                    <li>Multiple workers supported</li>
+                    <li>Redis Pub/Sub coordination</li>
+                    <li>Distributed locking</li>
+                    <li>Stateless workers</li>
+                </ul>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-title">🔌 Reconnection</div>
+                <ul class="feature-list">
+                    <li>Last event ID tracking</li>
+                    <li>Backfill missed events</li>
+                    <li>Seamless recovery</li>
+                    <li>No data loss</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number">1000+</div>
+                <div class="stat-label">Concurrent Connections<br>per Worker</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">600s</div>
+                <div class="stat-label">Agent Lock TTL<br>(Timeout)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">0</div>
+                <div class="stat-label">Backfill Events<br>(Fresh Connections)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">100+</div>
+                <div class="stat-label">Messages per Second<br>(Redis Pub/Sub)</div>
+            </div>
+        </div>
+        
+        <!-- Tech Stack -->
+        <div class="flow" style="margin-top: 40px;">
+            <div class="flow-title">🛠️ Technology Stack</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 20px;">
+                <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
+                    <strong>Web Framework</strong><br>FastAPI + Uvicorn
+                </div>
+                <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
+                    <strong>Message Broker</strong><br>Redis Pub/Sub
+                </div>
+                <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
+                    <strong>Database</strong><br>MongoDB
+                </div>
+                <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
+                    <strong>Authentication</strong><br>JWT (PyJWT)
+                </div>
+                <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
+                    <strong>Language</strong><br>Python 3.9+
+                </div>
+                <div style="background: white; padding: 15px; border-radius: 8px; text-align: center;">
+                    <strong>Deployment</strong><br>Docker + Gunicorn
+                </div>
+            </div>
+        </div>
+        
+        <!-- Endpoints -->
+        <div class="flow" style="margin-top: 40px;">
+            <div class="flow-title">🔗 API Endpoints</div>
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 15px;">
+                <div style="font-family: monospace; padding: 10px; background: #f8f9fa; border-radius: 5px; margin: 10px 0;">
+                    <strong style="color: #10b981;">WebSocket:</strong> ws://host/ws/{p_id}?token={jwt}&last_event_id={optional}
+                </div>
+                <div style="font-family: monospace; padding: 10px; background: #f8f9fa; border-radius: 5px; margin: 10px 0;">
+                    <strong style="color: #3b82f6;">REST:</strong> GET /presentation/{p_id}/data?token={jwt}
+                </div>
+                <div style="font-family: monospace; padding: 10px; background: #f8f9fa; border-radius: 5px; margin: 10px 0;">
+                    <strong style="color: #3b82f6;">REST:</strong> GET /presentation/{p_id}/status?token={jwt}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

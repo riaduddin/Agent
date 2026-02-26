@@ -1,0 +1,57 @@
+# ==========================================
+# DATABASE CONFIGURATION
+# ==========================================
+DATABASE_URL=mongodb://localhost:27017/your_database_name
+
+# ==========================================
+# GOOGLE AI & GEMINI CONFIGURATION
+# ==========================================
+# Option 1: Use API Key
+GEMINI_API_KEY=your_gemini_api_key_here
+GOOGLE_API_KEY=your_google_api_key_here
+
+# Option 2: Use Service Account (for production)
+GOOGLE_APPLICATION_CREDENTIALS=service-account.json
+
+# Gemini Model Configuration
+GEMINI_MODEL_FLASH=gemini-2.5-flash
+
+# ==========================================
+# QDRANT VECTOR DATABASE
+# ==========================================
+QDRANT_HOST=localhost
+QDRANT_PORT=6333
+QDRANT_API_KEY=
+
+# ==========================================
+# JWT AUTHENTICATION
+# ==========================================
+# IMPORTANT: This MUST match the JWT_SECRET used by your Node.js auth service
+# (@ridz-shothikai/shothik-auth-service)
+JWT_SECRET=your_jwt_secret_key_from_nodejs_auth_service
+JWT_ALGORITHM=HS256
+
+# ==========================================
+# GOOGLE CLOUD STORAGE (GCS)
+# ==========================================
+GCS_BUCKET_NAME=your_gcs_bucket_name
+
+# ==========================================
+# EXTERNAL SERVICES
+# ==========================================
+# Image Search API (if using external service)
+IMAGE_SEARCH_API_URL=http://192.168.68.144:8000
+
+# Brave Search API (for browser agent)
+BRAVE_API_KEY=your_brave_api_key
+
+# ==========================================
+# OPTIONAL CONFIGURATIONS
+# ==========================================
+# Log Level
+LOG_LEVEL=INFO
+
+# Server Configuration
+HOST=0.0.0.0
+PORT=8000
+

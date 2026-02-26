@@ -1,0 +1,34 @@
+Let me know if you'd like:
+
+A download button for the chart as PNG
+
+This as part of a multi-slide presentation viewer
+
+Center-aligned version for single chart presentations
+
+
+
+missing information:
+- `global_theme`: theme settings including fonts, color palette, and style guide  
+
+- `visual_suggestion`: *optional*, only for chart slides (contains `chart_type`, `data_label`, and `highlight`)
+
+
+
+
+
+have to ask question to the chatgpt:
+You are a helpful assistant which will help me for researching with me for my project which is slide-creator-agent, and you know this project as we build it together.
+in this research our main focus is this to figure it out which features or anythings which we have to improve in our case.
+
+if one box is present, then it should not add extra card 
+
+
+
+
+5. ✅ Charts (if `visual_suggestion.chart_type` is present):
+   - Use **Chart.js** via CDN: `https://cdn.jsdelivr.net/npm/chart.js`
+   - Render a `<canvas>` chart inside a max `420–500px` wide zone
+   - Use `doughnut`, `bar`, or `line` types depending on input
+   - Add chart label (`data_label`) and insight highlight below if provided
+   - Legend should be bottom-aligned and not overflow the card

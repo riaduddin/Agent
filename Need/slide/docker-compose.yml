@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  slide_creation_agent:
+    build: .
+    ports:
+      - "8010:8010"
+    volumes:
+      - .:/app
+    environment:
+      - PORT=8010
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/service-account.json
+      # In production, provide the JSON content directly via GOOGLE_CREDENTIALS_JSON or use Metadata Server
+      # For local dev with docker-compose, ensure service-account.json exists in the root
+      # MONGODB_URL: "mongodb://mongo:27017/slide_creator_db"
+      # GOOGLE_CLOUD_PROJECT: "your-gcp-project-id"
+      # GOOGLE_CLOUD_LOCATION: "your-gcp-location"
+      - PYTHONUNBUFFERED=1

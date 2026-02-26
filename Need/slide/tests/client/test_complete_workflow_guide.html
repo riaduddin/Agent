@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Workflow Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .step { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .step h3 { color: #333; margin-top: 0; }
+        .button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
+        .button:hover { background: #0056b3; }
+        .button:disabled { background: #ccc; cursor: not-allowed; }
+        .log { background: #f8f9fa; border: 1px solid #e9ecef; padding: 10px; margin: 10px 0; border-radius: 5px; font-family: monospace; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+        .status { padding: 5px 10px; border-radius: 3px; margin: 5px 0; }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Complete Workflow Test</h1>
+        <p>This test will help you verify the complete presentation generation workflow.</p>
+        
+        <div class="step">
+            <h3>Step 1: Server Status</h3>
+            <p>Make sure your server is running on <code>http://127.0.0.1:8060</code></p>
+            <button class="button" onclick="checkServerStatus()">Check Server Status</button>
+            <div id="serverStatus" class="log"></div>
+        </div>
+        
+        <div class="step">
+            <h3>Step 2: Create Presentation</h3>
+            <p>Create a new presentation to test the workflow.</p>
+            <button class="button" onclick="createPresentation()">Create Presentation</button>
+            <div id="createResult" class="log"></div>
+        </div>
+        
+        <div class="step">
+            <h3>Step 3: Start Presentation</h3>
+            <p>Start the presentation generation and monitor the process.</p>
+            <button class="button" onclick="startPresentation()" id="startBtn" disabled>Start Presentation</button>
+            <div id="startResult" class="log"></div>
+        </div>
+        
+        <div class="step">
+            <h3>Step 4: Monitor Socket.IO Events</h3>
+            <p>Monitor real-time events from the presentation generation.</p>
+            <button class="button" onclick="connectSocketIO()" id="connectBtn">Connect to Socket.IO</button>
+            <button class="button" onclick="disconnectSocketIO()" id="disconnectBtn" disabled>Disconnect</button>
+            <div id="socketEvents" class="log"></div>
+        </div>
+        
+        <div class="step">
+            <h3>Step 5: Check Final Status</h3>
+            <p>Check the final status and data of the presentation.</p>
+            <button class="button" onclick="checkFinalStatus()">Check Final Status</button>
+            <div id="finalStatus" class="log"></div>
+        </div>
+        
+        <div class="step">
+            <h3>Step 6: Get Presentation Data</h3>
+            <p>Retrieve the final presentation data.</p>
+            <button class="button" onclick="getPresentationData()">Get Presentation Data</button>
+            <div id="presentationData" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://127.0.0.1:8060';
+        const JWT_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2ODgwODdlMzA1MTk0OTc2YWVhOTk0MDMiLCJzdWIiOiI2ODgwODdlMzA1MTk0OTc2YWVhOTk0MDMiLCJlbWFpbCI6InJycmlhZHVkZGluQGdtYWlsLmNvbSIsInBhY2thZ2UiOiJ1bmxpbWl0ZWQiLCJpc192ZXJpZmllZCI6dHJ1ZSwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjA5MzM4Njl9.E9cUSlM-uQRrQ48gpH47t7eUN9ioem-A63CCPVJhZnI';
+        
+        let presentationId = null;
+        let socket = null;
+        
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const statusClass = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            element.innerHTML += `<div class="status ${statusClass}">[${timestamp}] ${message}</div>`;
+            element.scrollTop = element.scrollHeight;
+        }
+        
+        async function checkServerStatus() {
+            log('serverStatus', 'Checking server status...');
+            try {
+                const response = await fetch(`${BASE_URL}/`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${JWT_TOKEN}`
+                    }
+                });
+                
+                if (response.ok) {
+                    log('serverStatus', '✅ Server is running and accessible', 'success');
+                } else {
+                    log('serverStatus', `⚠️ Server responded with status: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log('serverStatus', `❌ Server is not accessible: ${error.message}`, 'error');
+            }
+        }
+        
+        async function createPresentation() {
+            log('createResult', 'Creating presentation...');
+            try {
+                const response = await fetch(`${BASE_URL}/create-presentation`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${JWT_TOKEN}`
+                    },
+                    body: JSON.stringify({
+                        topic: "Test Presentation for Workflow",
+                        description: "Testing the complete workflow",
+                        file_urls: []
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    presentationId = data.p_id;
+                    log('createResult', `✅ Presentation created successfully!`, 'success');
+                    log('createResult', `📋 Presentation ID: ${presentationId}`);
+                    log('createResult', `📋 Status: ${data.status}`);
+                    document.getElementById('startBtn').disabled = false;
+                } else {
+                    const error = await response.text();
+                    log('createResult', `❌ Failed to create presentation: ${error}`, 'error');
+                }
+            } catch (error) {
+                log('createResult', `❌ Error creating presentation: ${error.message}`, 'error');
+            }
+        }
+        
+        async function startPresentation() {
+            if (!presentationId) {
+                log('startResult', '❌ No presentation ID available', 'error');
+                return;
+            }
+            
+            log('startResult', `Starting presentation ${presentationId}...`);
+            try {
+                const response = await fetch(`${BASE_URL}/start-presentation/${presentationId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${JWT_TOKEN}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('startResult', `✅ Presentation started!`, 'success');
+                    log('startResult', `📋 Message: ${data.message}`);
+                    log('startResult', `📋 Status: ${data.status}`);
+                    
+                    // Connect to Socket.IO to monitor events
+                    setTimeout(() => {
+                        connectSocketIO();
+                    }, 1000);
+                } else {
+                    const error = await response.text();
+                    log('startResult', `❌ Failed to start presentation: ${error}`, 'error');
+                }
+            } catch (error) {
+                log('startResult', `❌ Error starting presentation: ${error.message}`, 'error');
+            }
+        }
+        
+        function connectSocketIO() {
+            log('socketEvents', 'Connecting to Socket.IO...');
+            
+            // Note: This is a simplified Socket.IO connection test
+            // In a real implementation, you would use the Socket.IO client library
+            const socketUrl = `${BASE_URL}/socket.io/?p_id=${presentationId}&token=${JWT_TOKEN}`;
+            log('socketEvents', `🔗 Socket.IO URL: ${socketUrl}`);
+            
+            // Simulate Socket.IO connection
+            log('socketEvents', '📡 Simulating Socket.IO connection...');
+            log('socketEvents', '📡 This would normally connect to Socket.IO and receive real-time events');
+            log('socketEvents', '📡 Expected events: started, processing, completed');
+            
+            document.getElementById('connectBtn').disabled = true;
+            document.getElementById('disconnectBtn').disabled = false;
+        }
+        
+        function disconnectSocketIO() {
+            log('socketEvents', 'Disconnecting from Socket.IO...');
+            document.getElementById('connectBtn').disabled = false;
+            document.getElementById('disconnectBtn').disabled = true;
+        }
+        
+        async function checkFinalStatus() {
+            if (!presentationId) {
+                log('finalStatus', '❌ No presentation ID available', 'error');
+                return;
+            }
+            
+            log('finalStatus', `Checking status for presentation ${presentationId}...`);
+            try {
+                const response = await fetch(`${BASE_URL}/presentation/${presentationId}/status`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${JWT_TOKEN}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('finalStatus', `✅ Status retrieved!`, 'success');
+                    log('finalStatus', `📋 Status: ${data.status}`);
+                    log('finalStatus', `📋 Created: ${data.created_at}`);
+                    log('finalStatus', `📋 Updated: ${data.updated_at}`);
+                } else {
+                    const error = await response.text();
+                    log('finalStatus', `❌ Failed to get status: ${error}`, 'error');
+                }
+            } catch (error) {
+                log('finalStatus', `❌ Error getting status: ${error.message}`, 'error');
+            }
+        }
+        
+        async function getPresentationData() {
+            if (!presentationId) {
+                log('presentationData', '❌ No presentation ID available', 'error');
+                return;
+            }
+            
+            log('presentationData', `Getting data for presentation ${presentationId}...`);
+            try {
+                const response = await fetch(`${BASE_URL}/presentation/${presentationId}/data`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${JWT_TOKEN}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('presentationData', `✅ Data retrieved!`, 'success');
+                    log('presentationData', `📋 Slides: ${data.slides ? data.slides.length : 0}`);
+                    log('presentationData', `📋 Status: ${data.status}`);
+                    log('presentationData', `📋 Data: ${JSON.stringify(data, null, 2)}`);
+                } else {
+                    const error = await response.text();
+                    log('presentationData', `❌ Failed to get data: ${error}`, 'error');
+                }
+            } catch (error) {
+                log('presentationData', `❌ Error getting data: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

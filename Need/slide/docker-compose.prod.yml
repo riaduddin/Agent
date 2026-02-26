@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  slide_creation_agent:
+    image: ghcr.io/riaduddin/slide_creation_agent:1b82bab # Replace with your actual repository and desired tag (e.g., a specific commit SHA)
+    ports:
+      - "8010:8010"
+    volumes:
+      - ./service-account.json:/app/service-account.json # Mount the service account file from the host
+    env_file:
+      - .env # Load environment variables from a .env file
+    environment:
+      # GOOGLE_APPLICATION_CREDENTIALS: /app/service-account.json # This will be loaded from .env if present
+      PYTHONUNBUFFERED: 1 # Keep this for immediate output in logs
+      # Other environment variables can be explicitly set here if they override .env or are not in .env
+    restart: always # Ensure the service restarts if it crashes

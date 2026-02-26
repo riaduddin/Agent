@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presentation Generation Service - Architecture Diagram</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+        
+        .layer {
+            margin: 30px 0;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            background: #f9f9f9;
+            transition: all 0.3s ease;
+        }
+        
+        .layer:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+        
+        .layer-title {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .layer-title::before {
+            content: '▸';
+            margin-right: 10px;
+            color: #764ba2;
+        }
+        
+        .components {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .component {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .component-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+        
+        .component-desc {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+        
+        .component-tech {
+            margin-top: 8px;
+            font-size: 0.85em;
+            color: #999;
+            font-style: italic;
+        }
+        
+        .arrow {
+            text-align: center;
+            font-size: 2em;
+            color: #667eea;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .flow-section {
+            margin: 40px 0;
+            padding: 20px;
+            background: #f0f4ff;
+            border-radius: 8px;
+        }
+        
+        .flow-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #764ba2;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .flow-step {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border-left: 4px solid #764ba2;
+            display: flex;
+            align-items: center;
+        }
+        
+        .flow-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .flow-text {
+            flex: 1;
+            color: #333;
+        }
+        
+        .tech-stack {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .tech-item {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .tech-name {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .tech-purpose {
+            font-size: 0.85em;
+            color: #666;
+        }
+        
+        @media print {
+            body {
+                background: white;
+            }
+            .container {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏗️ Presentation Generation Service</h1>
+        <p class="subtitle">High-Level Architecture Diagram</p>
+        
+        <!-- Client Layer -->
+        <div class="layer">
+            <div class="layer-title">1. CLIENT LAYER</div>
+            <div class="components">
+                <div class="component">
+                    <div class="component-title">Web Applications</div>
+                    <div class="component-desc">Browser-based clients connecting via WebSocket/REST</div>
+                </div>
+                <div class="component">
+                    <div class="component-title">Mobile Applications</div>
+                    <div class="component-desc">Native mobile apps with real-time capabilities</div>
+                </div>
+                <div class="component">
+                    <div class="component-title">API Clients</div>
+                    <div class="component-desc">Postman, curl, automated testing tools</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="arrow">⬇</div>
+        
+        <!-- API Gateway Layer -->
+        <div class="layer">
+            <div class="layer-title">2. API GATEWAY LAYER</div>
+            <div class="components">
+                <div class="component">
+                    <div class="component-title">FastAPI Server</div>
+                    <div class="component-desc">HTTP/WebSocket server handling all requests</div>
+                    <div class="component-tech">Python 3.9+, AsyncIO</div>
+                </div>
+                <div class="component">
+                    <div class="component-title">JWT Authentication</div>
+                    <div class="component-desc">Token-based auth, user verification, multi-tenancy</div>
+                    <div class="component-tech">PyJWT</div>
+                </div>
+                <div class="component">
+                    <div class="component-title">REST Endpoints</div>
+                    <div class="component-desc">/upload, /slides, /templates, /health</div>
+                </div>
+                <div class="component">
+                    <div class="component-title">WebSocket (Socket.IO)</div>
+                    <div class="component-desc">Real-time bidirectional communication</div>
+                    <div class="component-tech">python-socketio</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="arrow">⬇</div>
+        
+        <!-- Orchestration Layer -->
+        <div class="layer">
+            <div class="layer-title">3. ORCHESTRATION LAYER</div>
+            <div class="components">
+                <div class="component">
+                    <div class="component-title">SlideOrchestrationAgent</div>
+                    <div class="component-desc">Root agent: topic detection, query enhancement, intent classification, routing</div>
+                    <div class="component-tech">Google ADK, Gemini 2.5 Flash</div>
+                </div>
+                <div class="component">
+                    <div class="component-title">Slide Creation Pipeline</div>
+                    <div class="component-desc">Complete flow: research → planning → generation</div>
+                </div>
+                <div class="component">
+                    <div class="component-title">Modification Orchestrator</div>
+                    <div class="component-desc">Multi-slide editing with validation</div>
+                </div>
+                <div class="component">
+                    <div class="component-title">Insertion Orchestrator</div>
+                    <div class="component-desc">Add new slides to existing presentations</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="arrow">⬇</div>
+        
+        <!-- Processing Agents Layer -->
+        <div class="layer">
+            <div class="layer-title">4. PROCESSING AGENTS LAYER</div>
+            
+            <div style="margin: 20px 0;">
+                <strong style="color: #764ba2;">Research Phase (Parallel):</strong>
+                <div class="components" style="margin-top: 10px;">
+                    <div class="component">
+                        <div class="component-title">KeywordResearchAgent</div>
+                        <div class="component-desc">Generates 8-10 search queries from topic</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-title">BrowserAgent</div>
+                        <div class="component-desc">Parallel workers (0..N) for web scraping</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-title">File Extractor</div>
+                        <div class="component-desc">Extracts text from PDF/DOCX/TXT uploads</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-title">Qdrant Vector DB</div>
+                        <div class="component-desc">Semantic storage with 768D embeddings</div>
+                        <div class="component-tech">Vector Search, Gemini embeddings</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin: 20px 0;">
+                <strong style="color: #764ba2;">Planning Phase:</strong>
+                <div class="components" style="margin-top: 10px;">
+                    <div class="component">
+                        <div class="component-title">SpecExtractorAgent</div>
+                        <div class="component-desc">Extracts presentation type, audience, requirements</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-title">VibeEstimatorAgent</div>
+                        <div class="component-desc">Determines theme, colors, tone, visual style</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-title">PlanningAgent</div>
+                        <div class="component-desc">Generates structured slide outline (JSON)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin: 20px 0;">
+                <strong style="color: #764ba2;">Generation Phase (Parallel):</strong>
+                <div class="components" style="margin-top: 10px;">
+                    <div class="component">
+                        <div class="component-title">EnhancedSlideGenerator</div>
+                        <div class="component-desc">Parallel workers (0..N) generating HTML slides</div>
+                    </div>
+                    <div class="component">
+                        <div class="component-title">QualityVerifierAgent</div>
+                        <div class="component-desc">CSS fixes, text overflow, rendering validation</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="arrow">⬇</div>
+        
+        <!-- Data Storage Layer -->
+        <div class="layer">
+            <div class="layer-title">5. DATA STORAGE LAYER</div>
+            <div class="components">
+                <div class="component">
+                    <div class="component-title">MongoDB</div>
+                    <div class="component-desc">Primary database: presentations, slides, agent_logs, users, templates</div>
+                    <div class="component-tech">pymongo, connection pooling</div>
+                </div>
+                <div class="component">
+                    <div class="component-title">Redis</div>
+                    <div class="component-desc">Pub/Sub for cross-worker messaging, distributed locks, connection tracking</div>
+                    <div class="component-tech">redis.asyncio</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="arrow">⬇</div>
+        
+        <!-- External Services Layer -->
+        <div class="layer">
+            <div class="layer-title">6. EXTERNAL SERVICES LAYER</div>
+            <div class="components">
+                <div class="component">
+                    <div class="component-title">Google Gemini AI</div>
+                    <div class="component-desc">LLM for content generation (Gemini 2.5 Flash), embeddings (text-embedding-004)</div>
+                </div>
+                <div class="component">
+                    <div class="component-title">Search APIs</div>
+                    <div class="component-desc">Brave Search, Google Search for web research</div>
+                </div>
+                <div class="component">
+                    <div class="component-title">Google Cloud Storage</div>
+                    <div class="component-desc">File uploads, static assets, signed URLs</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Request Flow -->
+        <div class="flow-section">
+            <div class="flow-title">📋 CREATE PRESENTATION REQUEST FLOW</div>
+            <div class="flow-step">
+                <div class="flow-number">1</div>
+                <div class="flow-text">Client sends request via WebSocket with query, files, JWT token</div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-number">2</div>
+                <div class="flow-text">Authentication: Verify JWT, extract user_id, validate permissions</div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-number">3</div>
+                <div class="flow-text">Root Agent: Topic check → Query enhancement → Intent classification → Route to pipeline</div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-number">4</div>
+                <div class="flow-text">Research Phase: Generate keywords → Parallel web search → Extract files → Store in Qdrant</div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-number">5</div>
+                <div class="flow-text">Planning Phase: Extract specs → Estimate vibe → Generate slide outline (JSON)</div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-number">6</div>
+                <div class="flow-text">Generation Phase: Parallel slide generators → Query Qdrant → Generate HTML → Quality verify</div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-number">7</div>
+                <div class="flow-text">Storage & Streaming: Save to MongoDB → Emit via Socket.IO → Real-time updates to clients</div>
+            </div>
+        </div>
+        
+        <!-- Technology Stack -->
+        <div style="margin-top: 40px;">
+            <div class="layer-title" style="margin-bottom: 20px;">🔧 TECHNOLOGY STACK</div>
+            <div class="tech-stack">
+                <div class="tech-item">
+                    <div class="tech-name">FastAPI</div>
+                    <div class="tech-purpose">HTTP/WebSocket Server</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-name">Google Vertex AI</div>
+                    <div class="tech-purpose">Agent Orchestration</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-name">Gemini 2.5 Flash</div>
+                    <div class="tech-purpose">Content Generation</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-name">MongoDB</div>
+                    <div class="tech-purpose">Primary Database</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-name">Redis</div>
+                    <div class="tech-purpose">Pub/Sub & Locks</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-name">Qdrant</div>
+                    <div class="tech-purpose">Vector Database</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-name">Socket.IO</div>
+                    <div class="tech-purpose">Real-time Communication</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-name">Google Cloud Storage</div>
+                    <div class="tech-purpose">File Storage</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Performance Metrics -->
+        <div class="flow-section" style="margin-top: 40px;">
+            <div class="flow-title">⚡ PERFORMANCE CHARACTERISTICS</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 20px;">
+                <div class="component">
+                    <div class="component-title">Research Phase</div>
+                    <div class="component-desc">30-60 seconds<br/>8-10 parallel workers</div>
+                </div>
+                <div class="component">
+                    <div class="component-title">Planning Phase</div>
+                    <div class="component-desc">5-10 seconds<br/>Sequential processing</div>
+                </div>
+                <div class="component">
+                    <div class="component-title">Generation Phase</div>
+                    <div class="component-desc">15-30s per slide<br/>N parallel generators</div>
+                </div>
+                <div class="component">
+                    <div class="component-title">Total Time (6 slides)</div>
+                    <div class="component-desc">~1-2 minutes<br/>Optimized pipeline</div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 40px; color: #666; font-size: 0.9em;">
+            <p>Presentation Generation Service Architecture</p>
+            <p style="margin-top: 5px;">Version 1.0 | 2025</p>
+        </div>
+    </div>
+</body>
+</html>
+
+

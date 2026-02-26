@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Workflow Test</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .step {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f9f9f9;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background: white;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .message {
+            margin-bottom: 5px;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        .message.chunk { background: #e3f2fd; }
+        .message.event { background: #fff3e0; }
+        .message.terminal { background: #e8f5e8; }
+        .message.error { background: #ffebee; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Complete Workflow Test</h1>
+    <p>This demonstrates the complete workflow: Create → Start → Listen</p>
+    
+    <div class="step">
+        <h3>Step 1: Create Presentation</h3>
+        <div id="create-status" class="status info">Ready to create</div>
+        <button onclick="createPresentation()" id="create-btn">Create Presentation</button>
+        <div id="create-response"></div>
+    </div>
+    
+    <div class="step">
+        <h3>Step 2: Start Generation</h3>
+        <div id="start-status" class="status info">Waiting for presentation</div>
+        <button onclick="startPresentation()" id="start-btn" disabled>Start Generation</button>
+        <div id="start-response"></div>
+    </div>
+    
+    <div class="step">
+        <h3>Step 3: Real-time Data</h3>
+        <div id="socket-status" class="status info">Not connected</div>
+        <button onclick="connectSocket()" id="socket-btn" disabled>Connect Socket.IO</button>
+        <button onclick="disconnectSocket()" id="disconnect-btn" disabled>Disconnect</button>
+        <div id="messages" class="messages"></div>
+    </div>
+
+    <script>
+        // Configuration
+        const SERVER_URL = 'http://localhost:8060';
+        const JWT_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2ODgwODdlMzA1MTk0OTc2YWVhOTk0MDMiLCJzdWIiOiI2ODgwODdlMzA1MTk0OTc2YWVhOTk0MDMiLCJlbWFpbCI6InJycmlhZHVkZGluQGdtYWlsLmNvbSIsInBhY2thZ2UiOiJ1bmxpbWl0ZWQiLCJpc192ZXJpZmllZCI6dHJ1ZSwicm9sZSI6InVzZXIiLCJpYXQiOjE3NjA5MzM4Njl9.E9cUSlM-uQRrQ48gpH47t7eUN9ioem-A63CCPVJhZnI';
+        
+        let p_id = null;
+        let socket = null;
+        
+        function addMessage(message, type = 'info') {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        function updateStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+        }
+        
+        async function createPresentation() {
+            updateStatus('create-status', 'Creating...', 'info');
+            document.getElementById('create-btn').disabled = true;
+            
+            try {
+                const response = await fetch(`${SERVER_URL}/create-presentation`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${JWT_TOKEN}`
+                    },
+                    body: JSON.stringify({
+                        message: 'Create a presentation about AI in Healthcare with 8 slides'
+                    })
+                });
+                
+                const data = await response.json();
+                document.getElementById('create-response').innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                
+                if (response.ok) {
+                    p_id = data.p_id;
+                    updateStatus('create-status', `✅ Created: ${p_id}`, 'success');
+                    document.getElementById('start-btn').disabled = false;
+                    addMessage(`✅ Presentation created: ${p_id}`, 'success');
+                } else {
+                    updateStatus('create-status', `❌ Failed: ${data.detail}`, 'error');
+                    addMessage(`❌ Create failed: ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                updateStatus('create-status', `❌ Error: ${error.message}`, 'error');
+                addMessage(`❌ Error: ${error.message}`, 'error');
+            } finally {
+                document.getElementById('create-btn').disabled = false;
+            }
+        }
+        
+        async function startPresentation() {
+            if (!p_id) {
+                addMessage('❌ No presentation ID available', 'error');
+                return;
+            }
+            
+            updateStatus('start-status', 'Starting...', 'info');
+            document.getElementById('start-btn').disabled = true;
+            
+            try {
+                const response = await fetch(`${SERVER_URL}/start-presentation/${p_id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${JWT_TOKEN}`
+                    }
+                });
+                
+                const data = await response.json();
+                document.getElementById('start-response').innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                
+                if (response.ok) {
+                    updateStatus('start-status', `✅ Started: ${data.status}`, 'success');
+                    document.getElementById('socket-btn').disabled = false;
+                    addMessage(`✅ Generation started: ${data.status}`, 'success');
+                } else {
+                    updateStatus('start-status', `❌ Failed: ${data.detail}`, 'error');
+                    addMessage(`❌ Start failed: ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                updateStatus('start-status', `❌ Error: ${error.message}`, 'error');
+                addMessage(`❌ Error: ${error.message}`, 'error');
+            } finally {
+                document.getElementById('start-btn').disabled = false;
+            }
+        }
+        
+        function connectSocket() {
+            if (!p_id) {
+                addMessage('❌ No presentation ID available', 'error');
+                return;
+            }
+            
+            updateStatus('socket-status', 'Connecting...', 'info');
+            document.getElementById('socket-btn').disabled = true;
+            
+            socket = io(SERVER_URL, {
+                query: {
+                    p_id: p_id,
+                    token: JWT_TOKEN
+                }
+            });
+            
+            socket.on('connect', () => {
+                updateStatus('socket-status', '✅ Connected', 'success');
+                document.getElementById('disconnect-btn').disabled = false;
+                addMessage('🔌 Connected to Socket.IO', 'success');
+            });
+            
+            socket.on('disconnect', () => {
+                updateStatus('socket-status', '❌ Disconnected', 'error');
+                document.getElementById('disconnect-btn').disabled = true;
+                addMessage('🔌 Disconnected from Socket.IO', 'error');
+            });
+            
+            socket.on('connected', (data) => {
+                addMessage(`📨 Welcome: ${JSON.stringify(data)}`, 'event');
+            });
+            
+            socket.on('message', (data) => {
+                const msgType = data.type || 'unknown';
+                const author = data.author || 'unknown';
+                const content = data.content || '';
+                
+                addMessage(`📨 [${msgType}] from ${author}: ${content.substring(0, 100)}${content.length > 100 ? '...' : ''}`, msgType);
+                
+                if (msgType === 'terminal') {
+                    addMessage(`🎉 Generation completed!`, 'terminal');
+                }
+            });
+            
+            socket.on('pong', (data) => {
+                addMessage(`📨 Pong: ${JSON.stringify(data)}`, 'event');
+            });
+            
+            socket.on('error', (error) => {
+                addMessage(`❌ Socket error: ${error}`, 'error');
+            });
+        }
+        
+        function disconnectSocket() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+                updateStatus('socket-status', 'Disconnected', 'info');
+                document.getElementById('socket-btn').disabled = false;
+                document.getElementById('disconnect-btn').disabled = true;
+            }
+        }
+        
+        // Auto-connect when page loads
+        window.onload = function() {
+            addMessage('Ready to test complete workflow', 'info');
+        };
+    </script>
+</body>
+</html>

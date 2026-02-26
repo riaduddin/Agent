@@ -1,0 +1,21 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+service-account.json
+
+
+# Virtual environments
+.venv
+.env
+venv
+/conversion_service/node_modules
+
+conversion_service/package-lock.json
+
+node_modules
+
+logs
