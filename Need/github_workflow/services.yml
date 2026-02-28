@@ -1,0 +1,150 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - main
+      - staging-server
+      - dev-server
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get short commit hash
+        id: commit
+        run: echo "sha=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.commit.outputs.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to ${{ github.ref== 'refs/heads/staging-server' && 'Staging' || github.ref == 'refs/heads/dev-server' && 'Development'}}
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/dev-server' || github.ref == 'refs/heads/staging-server')
+
+    environment:
+      name: ${{ github.ref == 'refs/heads/staging-server' && 'staging' || 'development'}}
+    steps:
+      - name: "Checkout GitHub Action"
+        uses: actions/checkout@v4
+      
+      - name: "Set Short Commit Hash"
+        run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
+      
+      - name: "Setup SSH"
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      
+      - name: "Add Server to Known Hosts"
+        run: |
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+      
+      - name: "Login to GitHub Container Registry on Server"
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
+            echo "${{ secrets.ACCESS_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+          EOF
+      
+      - name: "Deploy to Server with Rollback Support"
+        id: deploy
+        run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} bash << EOF
+            set -e
+            cd ${{ secrets.DEPLOY_PATH }}
+            
+            # Save current image tag before updating (only for plagiarism service)
+            OLD_TAG=\$(sed -n '/^[[:space:]]*plagiarism:/,/^[[:space:]]*[a-z_]*:/ { /image:.*ghcr\.io.*shothik-plagiarism:/s/.*ghcr\.io\/[^\/]*\/shothik-plagiarism:\([a-fA-F0-9]*\).*/\1/p; }' docker-compose.yml | head -1)
+            echo "Current image tag: \${OLD_TAG}"
+            echo "New image tag: ${SHORT_SHA}"
+            
+            # Backup docker-compose.yml before changes
+            cp docker-compose.yml docker-compose.yml.backup
+            
+            # Update docker-compose.yml with new image tag for plagiarism service only
+            sed -i '/^[[:space:]]*plagiarism:/,/^[[:space:]]*[a-z_]*:/ { /image:.*ghcr\.io.*shothik-plagiarism:/s|ghcr\.io/[^/]*/shothik-plagiarism:[a-fA-F0-9]*|ghcr.io/${{ github.repository_owner }}/shothik-plagiarism:${SHORT_SHA}|g; }' docker-compose.yml
+            
+            # Verify the image exists and has size before pulling
+            echo "Verifying image exists in registry..."
+            if ! docker manifest inspect ghcr.io/${{ github.repository_owner }}/shothik-plagiarism:${SHORT_SHA} > /dev/null 2>&1; then
+              echo "ERROR: Image ghcr.io/${{ github.repository_owner }}/shothik-plagiarism:${SHORT_SHA} not found in registry!"
+              echo "Rolling back to previous image tag: \${OLD_TAG}"
+              cp docker-compose.yml.backup docker-compose.yml
+              exit 1
+            fi
+            
+            # Pull new image
+            echo "Pulling new image..."
+            if ! docker compose pull plagiarism; then
+              echo "ERROR: Failed to pull new image!"
+              echo "Rolling back to previous image tag: \${OLD_TAG}"
+              cp docker-compose.yml.backup docker-compose.yml
+              docker compose up -d plagiarism
+              exit 1
+            fi
+            
+            # Restart service with new image
+            echo "Restarting service with new image..."
+            if ! docker compose up -d plagiarism; then
+              echo "ERROR: Failed to start service with new image!"
+              echo "Rolling back to previous image tag: \${OLD_TAG}"
+              cp docker-compose.yml.backup docker-compose.yml
+              docker compose up -d plagiarism
+              exit 1
+            fi
+            
+            # Wait a bit for service to start
+            sleep 20
+            
+            # Verify container is running
+            echo "Verifying container is running..."
+            if ! docker compose ps | grep -q "plagiarism.*Up"; then
+              echo "ERROR: plagiarism container is not running!"
+              echo "Rolling back to previous image tag: \${OLD_TAG}"
+              cp docker-compose.yml.backup docker-compose.yml
+              docker compose up -d plagiarism
+              exit 1
+            fi
+            
+            # Show running containers
+            docker compose ps
+            
+            # Save old tag to file for manual rollback if needed
+            echo "\${OLD_TAG}" > .previous_image_tag
+            
+            echo "Deployment completed successfully!"
+            echo "New image tag: ${SHORT_SHA}"
+            echo "Previous image tag (saved): \${OLD_TAG}"
+          EOF
