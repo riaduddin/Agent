@@ -1,0 +1,185 @@
+name: MediCare CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "dev-server", "staging-server" ]
+  pull_request:
+    branches: [ "main", "dev-server", "staging-server" ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      short_sha: ${{ steps.meta.outputs.version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,format=short,prefix=,priority=100
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  test:
+    name: Run Unit Tests (Inside Container)
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull image for testing
+        run: |
+          IMAGE_TAG=$(echo ${{ github.sha }} | cut -c1-7)
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}
+
+      - name: Run Pytest inside Container
+        run: |
+          IMAGE_TAG=$(echo ${{ github.sha }} | cut -c1-7)
+          # Running pytest inside the container using the environment we built
+          # We install test dependencies on-the-fly to keep production image slim
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG} \
+            bash -c "pip install pytest pytest-asyncio httpx && pytest"
+
+  deploy:
+    name: Deploy to ${{ github.ref == 'refs/heads/staging-server' && 'Staging' || 'Development' }}
+    needs: [build, test]
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev-server' || github.ref == 'refs/heads/staging-server')
+    
+    # Use GitHub Environments for better secret management
+    environment:
+      name: ${{ github.ref == 'refs/heads/staging-server' && 'staging' || 'development' }}
+    
+    steps:
+      - name: "Checkout GitHub Action"
+        uses: actions/checkout@v4
+      
+      - name: "Set Short Commit Hash"
+        run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
+      
+      - name: "Setup SSH"
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          # This will use the secret from the specific Environment (staging or development)
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      
+      - name: "Add Server to Known Hosts"
+        run: |
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+      
+      - name: "Login to GitHub Container Registry on Server"
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
+            echo "${{ secrets.ACCESS_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+          EOF
+      
+      - name: "Deploy to Server with Rollback Support"
+        id: deploy
+        run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          REPO_NAME=${{ github.event.repository.name }}
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} bash << EOF
+            set -e
+            cd ${{ secrets.DEPLOY_PATH }}
+            
+            # Save current image tag before updating (only for medicare-service)
+            OLD_TAG=\$(sed -n '/^[[:space:]]*medicare-service:/,/^[[:space:]]*[a-z_]*:/ { /image:.*ghcr\.io.*${REPO_NAME}:/s/.*ghcr\.io\/[^\/]*\/${REPO_NAME}:\([a-fA-F0-9]*\).*/\1/p; }' docker-compose.yml | head -1)
+            echo "Current image tag: \${OLD_TAG}"
+            echo "New image tag: ${SHORT_SHA}"
+            
+            # Backup docker-compose.yml before changes
+            cp docker-compose.yml docker-compose.yml.backup
+            
+            # Update docker-compose.yml with new image tag for medicare-service only
+            sed -i '/^[[:space:]]*medicare-service:/,/^[[:space:]]*[a-z_]*:/ { /image:.*ghcr\.io.*${REPO_NAME}:/s|ghcr\.io/[^/]*/${REPO_NAME}:[a-fA-F0-9]*|ghcr.io/${{ github.repository_owner }}/${REPO_NAME}:${SHORT_SHA}|g; }' docker-compose.yml
+            
+            # Verify the image exists and has size before pulling
+            echo "Verifying image exists in registry..."
+            if ! docker manifest inspect ghcr.io/${{ github.repository_owner }}/${REPO_NAME}:${SHORT_SHA} > /dev/null 2>&1; then
+              echo "ERROR: Image ghcr.io/${{ github.repository_owner }}/${REPO_NAME}:${SHORT_SHA} not found in registry!"
+              echo "Rolling back to previous image tag: \${OLD_TAG}"
+              cp docker-compose.yml.backup docker-compose.yml
+              exit 1
+            fi
+            
+            # Pull new image
+            echo "Pulling new image..."
+            if ! docker compose pull medicare-service; then
+              echo "ERROR: Failed to pull new image!"
+              echo "Rolling back to previous image tag: \${OLD_TAG}"
+              cp docker-compose.yml.backup docker-compose.yml
+              docker compose up -d medicare-service
+              exit 1
+            fi
+            
+            # Restart service with new image
+            echo "Restarting service with new image..."
+            if ! docker compose up -d medicare-service; then
+              echo "ERROR: Failed to start service with new image!"
+              echo "Rolling back to previous image tag: \${OLD_TAG}"
+              cp docker-compose.yml.backup docker-compose.yml
+              docker compose up -d medicare-service
+              exit 1
+            fi
+            
+            # Wait a bit for service to start
+            sleep 20
+            
+            # Verify container is running
+            echo "Verifying container is running..."
+            if ! docker compose ps | grep -q "medicare-service.*Up"; then
+              echo "ERROR: medicare-service container is not running!"
+              echo "Rolling back to previous image tag: \${OLD_TAG}"
+              cp docker-compose.yml.backup docker-compose.yml
+              docker compose up -d medicare-service
+              exit 1
+            fi
+            
+            # Show running containers
+            docker compose ps
+            
+            # Save old tag to file for manual rollback if needed
+            echo "\${OLD_TAG}" > .previous_image_tag
+            
+            echo "Deployment completed successfully!"
+            echo "New image tag: ${SHORT_SHA}"
+            echo "Previous image tag (saved): \${OLD_TAG}"
+          EOF
