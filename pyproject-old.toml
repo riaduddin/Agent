@@ -4,7 +4,6 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
-
 dependencies = [
     "bedrock-agentcore>=1.4.7",
     "bedrock-agentcore-starter-toolkit>=0.2.0",
@@ -22,9 +21,3 @@ dependencies = [
     "langgraph-checkpoint-aws>=1.0.1",
     "sentence-transformers>=5.1.2",
 ]
-
-[tool.setuptools]
-packages = ["bedrock_agentcore"]
-
-[tool.setuptools.package-dir]
-"" = "."
